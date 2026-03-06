@@ -120,7 +120,7 @@ class Subdomain_Scanner():
 
 
     @classmethod
-    def _subdomain_scanner(cls, domain, sub, mutations=False, CONSOLE=console, verbose=False):
+    def _subdomain_scanner(cls, domain, sub, mutations=False, CONSOLE=console, verbose=True):
         """Subdomain scan happens here"""
 
 
@@ -135,9 +135,9 @@ class Subdomain_Scanner():
 
         try:
  
-            url = f"https://{domain}/{sub}"
+            url = f"https://{sub}.{domain}"
 
-            response = requests.get(url=url, timeout=int(Variables.timeout), allow_redirects=False)
+            response = requests.get(url=url, timeout=int(Variables.timeout), allow_redirects=False, verify=False)
             code     = response.status_code
             headers  = response.headers
            
@@ -153,9 +153,11 @@ class Subdomain_Scanner():
                     CONSOLE.print(f"[{c1}][[{cc}]{code}[/{cc}]][/{c1}] {url}")
                     Variables.found_subs.append(url)
                     return True
-                
 
 
+        except requests.exceptions.SSLError as e:
+            if verbose: CONSOLE.print(f"[{c7}][-] SSL Error:[{c2}] {e}")
+            Variables.errors += 1
         except (requests.exceptions.Timeout, requests.exceptions.ConnectTimeout) as e: 
             if verbose: CONSOLE.print(f"[{c7}][-] Timeout Error:[{c2}] {e}")
             Variables.errors += 1
@@ -218,7 +220,8 @@ class Subdomain_Scanner():
                     for sub in wordlist:
 
                         if len(futures) < max_threads:
-
+                            
+                            time.sleep(0.1)
                             future = executor.submit(Subdomain_Scanner._subdomain_scanner, url, sub)
                             futures.add(future)
                             # -  Enumeration:[{c5}] {cls.done}/{total}[/{c5}]

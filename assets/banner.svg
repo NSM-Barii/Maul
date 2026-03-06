@@ -1,0 +1,113 @@
+<svg width="1200" height="300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Red glow filter for lightsaber effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Animated gradient for background -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0a;stop-opacity:1">
+        <animate attributeName="stop-color" values="#0a0a0a;#1a0000;#0a0a0a" dur="4s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="50%" style="stop-color:#1a0000;stop-opacity:1">
+        <animate attributeName="stop-color" values="#1a0000;#330000;#1a0000" dur="4s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="100%" style="stop-color:#0a0a0a;stop-opacity:1">
+        <animate attributeName="stop-color" values="#0a0a0a;#1a0000;#0a0a0a" dur="4s" repeatCount="indefinite"/>
+      </stop>
+    </linearGradient>
+
+    <!-- Red glow gradient -->
+    <linearGradient id="redGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff0000;stop-opacity:1"/>
+      <stop offset="50%" style="stop-color:#cc0000;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#880000;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="300" fill="url(#bgGradient)"/>
+
+  <!-- Tech grid lines -->
+  <g stroke="#330000" stroke-width="1" opacity="0.3">
+    <line x1="0" y1="50" x2="1200" y2="50"/>
+    <line x1="0" y1="100" x2="1200" y2="100"/>
+    <line x1="0" y1="150" x2="1200" y2="150"/>
+    <line x1="0" y1="200" x2="1200" y2="200"/>
+    <line x1="0" y1="250" x2="1200" y2="250"/>
+  </g>
+
+  <!-- Animated red scan line -->
+  <line x1="0" y1="0" x2="1200" y2="0" stroke="#ff0000" stroke-width="2" opacity="0.8" filter="url(#glow)">
+    <animate attributeName="y1" values="0;300;0" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="y2" values="0;300;0" dur="3s" repeatCount="indefinite"/>
+  </line>
+
+  <!-- Left lightsaber blade -->
+  <rect x="50" y="120" width="8" height="60" fill="url(#redGlow)" filter="url(#glow)" rx="4">
+    <animate attributeName="opacity" values="0.8;1;0.8" dur="1.5s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Right lightsaber blade -->
+  <rect x="1142" y="120" width="8" height="60" fill="url(#redGlow)" filter="url(#glow)" rx="4">
+    <animate attributeName="opacity" values="0.8;1;0.8" dur="1.5s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Main Title: MAUL -->
+  <text x="600" y="140" font-family="'Courier New', monospace" font-size="80" font-weight="bold" fill="url(#redGlow)" text-anchor="middle" filter="url(#glow)">
+    MAUL
+    <animate attributeName="opacity" values="1;0.9;1" dur="2s" repeatCount="indefinite"/>
+  </text>
+
+  <!-- Subtitle -->
+  <text x="600" y="180" font-family="'Courier New', monospace" font-size="18" fill="#ff4444" text-anchor="middle" opacity="0.9">
+    Brother Program of VADER | Infrastructure Mapping &amp; Enumeration
+  </text>
+
+  <!-- Quote -->
+  <text x="600" y="210" font-family="'Courier New', monospace" font-size="14" fill="#aa0000" text-anchor="middle" opacity="0.7" font-style="italic">
+    "Fear is my ally." - Darth Maul
+  </text>
+
+  <!-- Tech details bar -->
+  <rect x="350" y="235" width="500" height="40" fill="#0a0a0a" opacity="0.8" rx="5"/>
+
+  <!-- Feature badges with pulse animation -->
+  <g>
+    <text x="350" y="260" font-family="'Courier New', monospace" font-size="12" fill="#ff3333" text-anchor="middle">
+      [PTR LOOKUP]
+      <animate attributeName="fill" values="#ff3333;#ff6666;#ff3333" dur="2s" repeatCount="indefinite"/>
+    </text>
+
+    <text x="500" y="260" font-family="'Courier New', monospace" font-size="12" fill="#ff3333" text-anchor="middle">
+      [SSL CERT]
+      <animate attributeName="fill" values="#ff3333;#ff6666;#ff3333" dur="2s" begin="0.3s" repeatCount="indefinite"/>
+    </text>
+
+    <text x="650" y="260" font-family="'Courier New', monospace" font-size="12" fill="#ff3333" text-anchor="middle">
+      [SUBDOMAIN]
+      <animate attributeName="fill" values="#ff3333;#ff6666;#ff3333" dur="2s" begin="0.6s" repeatCount="indefinite"/>
+    </text>
+
+    <text x="800" y="260" font-family="'Courier New', monospace" font-size="12" fill="#ff3333" text-anchor="middle">
+      [DIR ENUM]
+      <animate attributeName="fill" values="#ff3333;#ff6666;#ff3333" dur="2s" begin="0.9s" repeatCount="indefinite"/>
+    </text>
+  </g>
+
+  <!-- Corner accent lines -->
+  <polyline points="0,0 50,0 50,50 0,50" fill="none" stroke="#ff0000" stroke-width="2" opacity="0.5"/>
+  <polyline points="1200,0 1150,0 1150,50 1200,50" fill="none" stroke="#ff0000" stroke-width="2" opacity="0.5"/>
+  <polyline points="0,300 50,300 50,250 0,250" fill="none" stroke="#ff0000" stroke-width="2" opacity="0.5"/>
+  <polyline points="1200,300 1150,300 1150,250 1200,250" fill="none" stroke="#ff0000" stroke-width="2" opacity="0.5"/>
+
+  <!-- By NSM-Barii -->
+  <text x="1150" y="290" font-family="'Courier New', monospace" font-size="10" fill="#660000" text-anchor="end" opacity="0.6">
+    NSM-BARII
+  </text>
+</svg>
