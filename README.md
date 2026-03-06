@@ -19,22 +19,22 @@ Maul is a comprehensive infrastructure mapping and enumeration tool designed for
 ## Features
 
 ### Infrastructure Mapping
-✅ **IP-to-Domain Mapping** - Reverse DNS (PTR) lookups to map IPs back to domains
-✅ **SSL Certificate Analysis** - Extract domains from SSL/TLS certificates
-✅ **WHOIS Integration** - Gather ownership and registration data (Coming Soon)
-✅ **ASN Mapping** - Map infrastructure to Autonomous System Numbers (Coming Soon)
+- **IP-to-Domain Mapping** - Reverse DNS (PTR) lookups to map IPs back to domains
+- **SSL Certificate Analysis** - Extract domains from SSL/TLS certificates
+- **WHOIS Integration** - Gather ownership and registration data (Coming Soon)
+- **ASN Mapping** - Map infrastructure to Autonomous System Numbers (Coming Soon)
 
 ### Enumeration Capabilities
-✅ **Subdomain Enumeration** - Brute force subdomains using built-in wordlists
-✅ **Directory Enumeration** - Discover hidden paths and directories (Coming Soon)
-✅ **Virtual Host Discovery** - Identify virtual hosts on shared IPs (Coming Soon)
+- **Subdomain Enumeration** - Brute force subdomains using built-in wordlists
+- **Directory Enumeration** - Discover hidden paths and directories (Coming Soon)
+- **Virtual Host Discovery** - Identify virtual hosts on shared IPs (Coming Soon)
 
 ### Performance & Output
-✅ **Multi-Target Support** - Process bulk IP lists and domain files from Vader
-✅ **High-Speed Threading** - Concurrent scanning with customizable thread counts
-✅ **Status Code Filtering** - Filter results by HTTP response codes
-✅ **Result Saving** - Export discoveries to timestamped files
-✅ **Rich UI** - Live scanning dashboard with real-time stats
+- **Multi-Target Support** - Process bulk IP lists and domain files from Vader
+- **High-Speed Threading** - Concurrent scanning with customizable thread counts
+- **Status Code Filtering** - Filter results by HTTP response codes
+- **Result Saving** - Export discoveries to timestamped files
+- **Rich UI** - Live scanning dashboard with real-time stats
 
 ---
 
@@ -146,28 +146,6 @@ maul/
 │   └── saved_scans/               # Scan results
 └── README.md
 ```
-
----
-
-## Roadmap
-
-### Infrastructure Mapping
-- [ ] Reverse DNS (PTR) lookup implementation
-- [ ] SSL certificate domain extraction
-- [ ] WHOIS data integration
-- [ ] ASN mapping and BGP analysis
-- [ ] Virtual host discovery
-
-### Enumeration
-- [ ] Complete directory enumeration module
-- [ ] DNS-based subdomain validation
-- [ ] Subdomain mutation engine
-- [ ] Custom header support
-
-### Integration
-- [ ] Seamless Vader → Maul workflow
-- [ ] Automated IP-to-domain mapping pipeline
-- [ ] Export to multiple formats (JSON, CSV, XML)
 
 ---
 

@@ -118,10 +118,32 @@ Amount of code written per stream
 
 
 Stream 1: 580 LOC
-  
+
 
 
 
 
 Well see how long this last as i am one tired ass nigga frl // LOL
+"""
+
+
+
+# FOUND SOME LIBARIES TO TRY OUT
+"""
+IP-TO-DOMAIN MAPPING METHODS (FOR INFRASTRUCTURE MODULE)
+
+Libraries Needed:
+- ssl (built-in)
+- socket (built-in)
+
+1. SSL/TLS Certificate Extraction
+   Method: ssl.create_default_context() + socket.create_connection()
+   Extract: cert.get('subject') for CN, cert.get('subjectAltName') for SANs
+   Port: 443
+
+2. Reverse DNS (PTR) Lookup
+   Method: socket.gethostbyaddr(ip)
+   Returns: hostname string
+   Fast UDP query
+
 """
