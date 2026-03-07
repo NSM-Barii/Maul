@@ -56,7 +56,8 @@ class Main():
 
     parser = argparse.ArgumentParser(description="Scanning tool for deep infrastructure analysis")
 
-
+    
+    parser.add_argument("-i",             help="pass a list of ips")
     parser.add_argument("-u",             help="pass a single url for scanning")
     parser.add_argument("-d",             help="Pass .txt file filled with domains")
     parser.add_argument("-t",             help="Max amount of threads to spawn")
@@ -78,13 +79,14 @@ class Main():
     args = parser.parse_args()
 
     
+    Variables.ips          = args.i            or False
     Variables.url          = args.u            or False
     Variables.domains      = args.d            or False
     Variables.max_threads  = args.t            or 250
     
     Variables.status_codes = args.status_codes or False
-    Variables.wordlist_sub = args.sub_wordlist or 2
-    Variables.wordlist_dir = args.dir_wordlist or 2
+    Variables.wordlist_sub = args.sub_wordlist or "2"
+    Variables.wordlist_dir = args.dir_wordlist or "2"
 
     Variables.timeout      = args.timeout      or 5
     Variables.save         = args.save         or False
@@ -103,6 +105,11 @@ class Main():
     elif Variables.wordlist_dir=="4": Variables.d_name="large.txt"
     else: Variables.d_name=False
 
+
+
+
+    try: Variables.max_threads = int(Variables.max_threads)
+    except Exception: Variables.max_threads = 250
 
 
     if args.status_codes:
@@ -139,6 +146,6 @@ class Main():
         f"\n[{c1}]=================================",
     )
 
-    time.sleep(5); print("")
+    #time.sleep(5); print("")
     
     Run.runner()

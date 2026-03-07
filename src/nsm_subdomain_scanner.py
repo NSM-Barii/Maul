@@ -11,6 +11,7 @@ from rich.console import Console
 
 # ETC IMPORTS
 import requests, ipaddress, sys, time
+import dns.resolver
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
@@ -54,7 +55,7 @@ class Subdomain_Scanner():
 
         try:
 
-            if   wordlist=="1" or wordlist=="tiny.txt":   path = path_main / "tiny.txt"
+            if   wordlist=="1" or wordlist=="tiny.txt":     path = path_main / "tiny.txt"
             elif wordlist=="2" or wordlist=="small.txt":    path = path_main / "small.txt"
             elif wordlist=="3" or wordlist=="medium.txt":   path = path_main / "medium.txt"   
             elif wordlist=="4" or wordlist=="large.txt":    path = path_main / "large.txt"
@@ -67,12 +68,12 @@ class Subdomain_Scanner():
             with open(str(path), "r") as file:
 
                 for word in file:
-                    text = word.strip().split("\t"); text = ''.join(word)
+                    text = word.strip().split("\t"); text = ''.join(text)
                     valid_wordlist.add(text)
-
+                 
 
                 
-            if verbose: CONSOLE.print(f"[{c1}][+] Successfully validated dir wordlist: {path}")
+            if verbose: CONSOLE.print(f"[{c1}][+] Successfully validated sub wordlist: {path}")
             return valid_wordlist
                 
 
@@ -120,7 +121,7 @@ class Subdomain_Scanner():
 
 
     @classmethod
-    def _subdomain_scanner(cls, domain, sub, mutations=False, CONSOLE=console, verbose=True):
+    def _subdomain_scanner(cls, domain, sub, mutations=False, CONSOLE=console, verbose=False):
         """Subdomain scan happens here"""
 
 
@@ -135,44 +136,23 @@ class Subdomain_Scanner():
 
         try:
  
-            url = f"https://{sub}.{domain}"
+            subdomain = (f"{sub}.{domain}")
+            rdata = dns.resolver.resolve(subdomain, "A")
 
-            response = requests.get(url=url, timeout=int(Variables.timeout), allow_redirects=False, verify=False)
-            code     = response.status_code
-            headers  = response.headers
-           
-
-            if code in Variables.status_codes:
+            if rdata:
                 
                 with Variables.LOCK:
 
-                    if code in [200,204]:cc = c6
-                    elif code in [300,301,302,303,304]: cc = c2
-
-
-                    CONSOLE.print(f"[{c1}][[{cc}]{code}[/{cc}]][/{c1}] {url}")
-                    Variables.found_subs.append(url)
+                    CONSOLE.print(f"[{c1}][*][{c2}] {subdomain}")
+                    Variables.found_subs.append(subdomain)
                     return True
 
 
-        except requests.exceptions.SSLError as e:
-            if verbose: CONSOLE.print(f"[{c7}][-] SSL Error:[{c2}] {e}")
-            Variables.errors += 1
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectTimeout) as e: 
-            if verbose: CONSOLE.print(f"[{c7}][-] Timeout Error:[{c2}] {e}")
-            Variables.errors += 1
-        except requests.ConnectionError as e: 
-            if verbose: CONSOLE.print(f"[{c7}][-] Connection Error:[{c2}] {e}")
-            Variables.errors += 1
         except Exception as e: 
             if verbose: CONSOLE.print(f"[{c7}][-] Exception Error:[{c2}] {e}")
             Variables.errors += 1
         
 
-        finally: 
-            with Variables.LOCK:cls.done += 1
-
-    
 
     @classmethod
     def _threader(cls, max_threads, url, domains, wordlist, CONSOLE=console, verbose=True):
@@ -190,11 +170,6 @@ class Subdomain_Scanner():
         total   = len(wordlist)
 
 
-        try: max_threads = int(max_threads)
-        except Exception: max_threads = 250
-
-
-
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
                 
             try:
@@ -208,7 +183,7 @@ class Subdomain_Scanner():
 
                                 future = executor.submit(Subdomain_Scanner._subdomain_scanner, domain, sub)
                                 futures.add(future)
-                                Variables.panel.renderable = (f"Target:[{c5}] {domain}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Status_Codes:[{c5}] {Variables.status_codes}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                                Variables.panel.renderable = (f"Target:[{c5}] {url}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
                             
                             
                             done = {f for f in futures if f.done()}
@@ -225,7 +200,7 @@ class Subdomain_Scanner():
                             future = executor.submit(Subdomain_Scanner._subdomain_scanner, url, sub)
                             futures.add(future)
                             # -  Enumeration:[{c5}] {cls.done}/{total}[/{c5}]
-                            Variables.panel.renderable = (f"Target:[{c5}] {url}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Status_Codes:[{c5}] {Variables.status_codes}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                            Variables.panel.renderable = (f"Target:[{c5}] {url}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
 
                         done = {f for f in futures if f.done()}
@@ -238,7 +213,7 @@ class Subdomain_Scanner():
             except Exception as e: CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}"); Variables.errors += 1
             
     
-            CONSOLE.print(f"[{c1}][+] Scan Results:[/{c1}] {len(Variables.found_subs)}/{len(wordlist)}")
+            CONSOLE.print(f"[{c1}][+] Scan Results:[/{c1}] {len(Variables.found_subs)}/{total}")
     
     
     @staticmethod
@@ -255,6 +230,7 @@ class Subdomain_Scanner():
 
         
         if domains: domains = Subdomain_Scanner._domain_sanitzer(domains=domains)
+        else:       domains = Variables.found_doms
         wordlist  = Subdomain_Scanner._sub_sanitzer(wordlist=wordlist); time.sleep(3)
         
         Subdomain_Scanner._threader(max_threads=max_threads, url=url, domains=domains, wordlist=wordlist)

@@ -3,3 +3,4 @@ ipaddress
 requests
 pyfiglet
 pathlib
+pythondns

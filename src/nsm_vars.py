@@ -11,6 +11,7 @@ class Variables():
     """Host multi-module vars in here"""
  
     
+    ips          = False
     url          = False
     domains      = False
 
@@ -27,7 +28,8 @@ class Variables():
     timeout     = 3
     save        = False
     LOCK        = threading.Lock()
-
+    
+    found_doms = []
     found_subs = []
     found_dirs = []
 
