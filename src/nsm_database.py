@@ -147,3 +147,58 @@ Libraries Needed:
    Fast UDP query
 
 """
+
+
+"""
+SSL CERTIFICATE EXTRACTION - DETAILED IMPLEMENTATION
+
+Why the current implementation doesn't work:
+1. socket.create_connection() takes (address, timeout) NOT (address, socket_type)
+   - WRONG: socket.create_connection((ip, 443), socket.SOCK_STREAM)
+   - RIGHT: socket.create_connection((ip, 443), timeout=5)
+
+2. When connecting to IPs (not domains), SSL hostname verification MUST be disabled
+   - SSL certs are issued for DOMAINS not IPs
+   - Default context tries to verify hostname → fails on IP connections
+   - Fix: context.check_hostname = False + context.verify_mode = ssl.CERT_NONE
+
+3. Only grabbing Common Name (CN) misses most domains
+   - CN = 1 domain (main domain on cert)
+   - SANs = 10-100+ domains (Subject Alternative Names)
+   - SANs are the goldmine for infrastructure mapping
+
+Correct Implementation:
+
+def _pull_domains_ssl(ip):
+    # Step 1: Create SSL context and disable hostname verification
+    context = ssl.create_default_context()
+    context.check_hostname = False      # Don't verify hostname (we're using IP)
+    context.verify_mode = ssl.CERT_NONE # Don't verify cert validity
+
+    # Step 2: Connect to IP on port 443 with timeout
+    with socket.create_connection((ip, 443), timeout=5) as sock:
+
+        # Step 3: Wrap socket with SSL
+        with context.wrap_socket(sock, server_hostname=ip) as ssock:
+            cert = ssock.getpeercert()  # Get certificate
+
+            # Step 4: Extract Common Name (CN)
+            for sub in cert.get('subject', ()):
+                for key, value in sub:
+                    if key == 'commonName':
+                        print(f"CN: {value}")  # Main domain
+
+            # Step 5: Extract SANs (Subject Alternative Names) - THE GOLDMINE
+            for key, value in cert.get('subjectAltName', ()):
+                if key == 'DNS':
+                    print(f"SAN: {value}")  # Additional domains
+
+Key Points:
+- cert.get('subject') returns nested tuples: ((('commonName', 'example.com'),),)
+- cert.get('subjectAltName') returns tuples: (('DNS', 'example.com'), ('DNS', 'www.example.com'))
+- SANs can contain wildcards: *.example.com
+- Single cert can reveal entire infrastructure (all subdomains)
+- Always use timeout to prevent hanging on dead IPs
+- Wrap in try/except - many IPs won't have port 443 open or valid cert
+
+"""
