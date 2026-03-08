@@ -231,6 +231,8 @@ class Subdomain_Scanner():
         else:       domains = Variables.found_doms
         wordlist  = Subdomain_Scanner._sub_sanitzer(wordlist=wordlist)
         
+        p = "=" * 10
+        console.print(f"[bold red]\n{p}  Subdomain Enumeration  {p}\n")
         Subdomain_Scanner._threader(max_threads=max_threads, url=url, domains=domains, wordlist=wordlist)
     
         

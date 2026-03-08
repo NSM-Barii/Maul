@@ -176,7 +176,10 @@ class Reverse_IP_Domain():
         max_threads = Variables.max_threads
         
         
-        ips = Reverse_IP_Domain._ips_sanitzer(ips=ips); time.sleep(3)
+        ips = Reverse_IP_Domain._ips_sanitzer(ips=ips)
+
+        p = "=" * 10
+        console.print(f"[bold red]\n{p}  IP Enumeration  {p}\n")
         Reverse_IP_Domain._threader(max_threads=max_threads, ips=ips)
 
 

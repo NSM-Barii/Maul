@@ -82,7 +82,7 @@ class Directory_Scanner():
     
 
     @classmethod
-    def _directory_scanner(cls, subdomain, dir, mutations=False, CONSOLE=console, verbose=False):
+    def _directory_scanner(cls, subdomain, dir, mutations=False, CONSOLE=console, verbose=True):
         """Subdomain scan happens here"""
 
 
@@ -95,8 +95,9 @@ class Directory_Scanner():
 
 
 
-        try:
- 
+        try: 
+            
+            cls.done += 1
             url = f"https://{subdomain}/{dir}"
 
             response = requests.get(url=url, timeout=int(Variables.timeout), allow_redirects=False)
@@ -129,10 +130,6 @@ class Directory_Scanner():
         except Exception as e: 
             if verbose: CONSOLE.print(f"[{c7}][-] Exception Error:[{c2}] {e}")
             Variables.errors += 1
-        
-
-        finally: 
-            with Variables.LOCK:cls.done += 1
 
 
     @classmethod
@@ -159,8 +156,7 @@ class Directory_Scanner():
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
                 
             try:
-                p = "=" * 10
-                console.print(f"[bold red]\n{p}  Directory Enumeration  {p}\n")
+
                 for domain in subdomains:
                     for dir in wordlist:
 
@@ -192,7 +188,8 @@ class Directory_Scanner():
 
         
         wordlist  = Directory_Scanner._dir_sanitzer(wordlist=wordlist)
-        
+        p = "=" * 10
+        console.print(f"[bold red]\n{p}  Directory Enumeration  {p}\n")
         Directory_Scanner._threader(max_threads=max_threads, subdomains=subdomains, wordlist=wordlist)
     
         
