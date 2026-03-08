@@ -135,6 +135,8 @@ class Subdomain_Scanner():
 
 
         try:
+
+            cls.done += 1
  
             subdomain = (f"{sub}.{domain}")
             rdata = dns.resolver.resolve(subdomain, "A")
