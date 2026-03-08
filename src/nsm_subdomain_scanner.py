@@ -227,7 +227,7 @@ class Subdomain_Scanner():
         
         if domains: domains = Subdomain_Scanner._domain_sanitzer(domains=domains)
         else:       domains = Variables.found_doms
-        wordlist  = Subdomain_Scanner._sub_sanitzer(wordlist=wordlist); time.sleep(3)
+        wordlist  = Subdomain_Scanner._sub_sanitzer(wordlist=wordlist)
         
         Subdomain_Scanner._threader(max_threads=max_threads, url=url, domains=domains, wordlist=wordlist)
     
