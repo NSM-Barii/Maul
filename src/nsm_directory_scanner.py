@@ -107,7 +107,7 @@ class Directory_Scanner():
 
             if code in Variables.status_codes:
                 
-                with Variables.LOCK:
+                #with Variables.LOCK:
 
                     if code in [200,204]:cc = c6
                     elif code in [300,301,302,303,304]: cc = c2

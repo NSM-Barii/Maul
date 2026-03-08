@@ -144,7 +144,7 @@ class Subdomain_Scanner():
             if rdata:
 
                 response = requests.get(url=f"https://{subdomain}")
-                if response not in [200,204]: return False
+                if response.status_code not in [200,204]: return False
                 
                 with Variables.LOCK:
 
