@@ -36,7 +36,7 @@ class Variables():
 
     console = Console()
     panel   = Panel(renderable="Starting", style="bold red", border_style="bold purple", expand=False)
-    refresh_per_second = 20
+    refresh_per_second = 1
 
  
 

@@ -152,17 +152,14 @@ class Reverse_IP_Domain():
             try:
             
                 for ip in ips:
-                    
-                    if len(futures) < max_threads:
-                        
-                        future = executor.submit(Reverse_IP_Domain._pull_domains_socket, ip)
-                        futures.add(future)
-                        Variables.panel.renderable = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+             
+                    future = executor.submit(Reverse_IP_Domain._pull_domains_socket, ip)
+                    futures.add(future)
+                    Variables.panel.renderable = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
-                    
-
-                    done = {f for f in futures if f.done()}
-                    futures -= done
+            
+                for future in futures:
+                    future.result()
             
 
             except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}");  Variables.errors +=1
