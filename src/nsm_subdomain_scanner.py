@@ -142,6 +142,9 @@ class Subdomain_Scanner():
             rdata = dns.resolver.resolve(subdomain, "A")
 
             if rdata:
+
+                response = requests.get(url=f"https://{subdomain}")
+                if response not in [200,204]: return False
                 
                 with Variables.LOCK:
 
@@ -152,7 +155,7 @@ class Subdomain_Scanner():
 
         except Exception as e: 
             if verbose: CONSOLE.print(f"[{c7}][-] Exception Error:[{c2}] {e}")
-            Variables.errors += 1
+            Variables.errors += 1; return False
         
 
 
