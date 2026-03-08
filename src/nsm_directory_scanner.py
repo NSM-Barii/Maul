@@ -159,24 +159,18 @@ class Directory_Scanner():
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
                 
             try:
-
-                console.print("Directory scanning")
+                p = "=" * 10
+                console.print(f"[bold red]\n{p}  Directory Enumeration  {p}\n")
                 for domain in subdomains:
                     for dir in wordlist:
 
-                        if len(futures) < max_threads:
+                        future = executor.submit(Directory_Scanner._directory_scanner, domain, dir)
+                        futures.add(future)
+                        Variables.panel.renderable = (f"Target:[{c5}] {domain}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.d_name}[/{c5}]  -  Status_Codes:[{c5}] {Variables.status_codes}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                    
 
-                            future = executor.submit(Directory_Scanner._directory_scanner, domain, dir)
-                            futures.add(future)
-                            Variables.panel.renderable = (f"Target:[{c5}] {domain}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.d_name}[/{c5}]  -  Status_Codes:[{c5}] {Variables.status_codes}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
-                        
-                        
-                        done = {f for f in futures if f.done()}
-                        futures -= done
-            
-
-
-                executor.shutdown(wait=True)
+                for future in futures:
+                    future.result()
 
             
             except Exception as e: CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}"); Variables.errors += 1
