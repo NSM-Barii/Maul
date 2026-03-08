@@ -196,7 +196,7 @@ class Subdomain_Scanner():
                         future = executor.submit(Subdomain_Scanner._subdomain_scanner, url, sub)
                         futures.append(future)  # CHANGED: append instead of add
                         # -  Enumeration:[{c5}] {cls.done}/{total}[/{c5}]
-                        Variables.panel.renderable = (f"Target:[{c5}] {sub}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                        with Variables.LOCK: Variables.panel.renderable = (f"Target:[{c5}] {sub}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
                         # REMOVED: manual futures cleanup - not needed
 

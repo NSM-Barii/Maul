@@ -166,7 +166,7 @@ class Directory_Scanner():
 
                         future = executor.submit(Directory_Scanner._directory_scanner, domain, dir)
                         futures.add(future)
-                        Variables.panel.renderable = (f"Target:[{c5}] {domain}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.d_name}[/{c5}]  -  Status_Codes:[{c5}] {Variables.status_codes}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                        with Variables.LOCK: Variables.panel.renderable = (f"Target:[{c5}] {domain}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.d_name}[/{c5}]  -  Status_Codes:[{c5}] {Variables.status_codes}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
                     
 
                 for future in futures:
@@ -184,7 +184,7 @@ class Directory_Scanner():
         """This will run class wide logic"""
 
         
-        subdomains  = Variables.found_subs; console.print(subdomains)
+        subdomains  = Variables.found_subs
         max_threads = Variables.max_threads
         timeout     = Variables.timeout
         url         = Variables.url
