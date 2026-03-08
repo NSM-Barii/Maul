@@ -37,16 +37,8 @@ class Run():
         with Live(Variables.panel, console=Variables.console, refresh_per_second=Variables.refresh_per_second):
             
 
-            if Variables.save: File_Saver.make_path()#; time.sleep(2)
-            if Variables.ips: Reverse_IP_Domain.main(); console.print(Variables.found_doms); time.sleep(3)
+            if Variables.save: File_Saver.make_path()
+            if Variables.ips: Reverse_IP_Domain.main()
             if Variables.url or Variables.domains or Variables.found_doms: Subdomain_Scanner.main()
-            if False:
-                test_mains = [
-                "b.ns.instagram.com",
-                "help.instagram.com"
-                ]
-                for test in test_mains: Variables.found_subs.append(test)
-
-            if Variables.found_subs: Directory_Scanner.main()
-            
+            if Variables.found_subs: Directory_Scanner.main()          
             if Variables.save: File_Saver.push_scan_results(data=Variables.found_subs)
