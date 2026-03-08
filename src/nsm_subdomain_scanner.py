@@ -166,53 +166,49 @@ class Subdomain_Scanner():
         c6 = "bold red"
 
 
-        futures = set()
+        futures = []  # CHANGED: list instead of set for easier iteration
         total   = len(wordlist)
 
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
-                
+
             try:
-                
+
                 if domains:
                     print("1")
                     for domain in domains:
                         for sub in wordlist:
 
-                            if len(futures) < max_threads:
+                            # REMOVED: if len(futures) < max_threads check - executor handles queue automatically
+                            future = executor.submit(Subdomain_Scanner._subdomain_scanner, domain, sub)
+                            futures.append(future)  # CHANGED: append instead of add
+                            Variables.panel.renderable = (f"Target:[{c5}] {url}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
-                                future = executor.submit(Subdomain_Scanner._subdomain_scanner, domain, sub)
-                                futures.add(future)
-                                Variables.panel.renderable = (f"Target:[{c5}] {url}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
-                            
-                            
-                            done = {f for f in futures if f.done()}
-                            futures -= done
-                
+                            # REMOVED: manual futures cleanup - not needed
+
 
                 elif url:
                     print("2")
                     for sub in wordlist:
 
-                        if len(futures) < max_threads:
-                            
-                            time.sleep(0.1)
-                            future = executor.submit(Subdomain_Scanner._subdomain_scanner, url, sub)
-                            futures.add(future)
-                            # -  Enumeration:[{c5}] {cls.done}/{total}[/{c5}]
-                            Variables.panel.renderable = (f"Target:[{c5}] {url}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                        # REMOVED: if len(futures) < max_threads check - executor handles queue automatically
+                        # REMOVED: time.sleep(0.1) - was killing performance
+                        future = executor.submit(Subdomain_Scanner._subdomain_scanner, url, sub)
+                        futures.append(future)  # CHANGED: append instead of add
+                        # -  Enumeration:[{c5}] {cls.done}/{total}[/{c5}]
+                        Variables.panel.renderable = (f"Target:[{c5}] {url}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+
+                        # REMOVED: manual futures cleanup - not needed
 
 
-                        done = {f for f in futures if f.done()}
-                        futures -= done
-                    
+                # ADDED: Wait for all futures to complete
+                for future in futures:
+                    future.result()
 
-                executor.shutdown(wait=True)
 
-            
             except Exception as e: CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}"); Variables.errors += 1
-            
-    
+
+
             CONSOLE.print(f"[{c1}][+] Scan Results:[/{c1}] {len(Variables.found_subs)}/{total}")
     
     

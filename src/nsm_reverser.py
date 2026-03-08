@@ -26,12 +26,6 @@ console = Variables.console
 
 
 
-subdomain = "mail.google.com"
-rdata = dns.resolver.resolve(subdomain, "A")
-for data in rdata:
-    print(data)
-
-
 
 class Reverse_IP_Domain():
     """This class will be responsible for pulling domains from ips"""
