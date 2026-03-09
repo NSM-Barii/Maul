@@ -187,7 +187,7 @@ class Subdomain_Scanner():
                             # REMOVED: if len(futures) < max_threads check - executor handles queue automatically
                             future = executor.submit(Subdomain_Scanner._subdomain_scanner, domain, sub)
                             futures.append(future)  # CHANGED: append instead of add
-                            Variables.panel.renderable = (f"Target:[{c5}] {url}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                            Variables.panel_text = (f"Target:[{c5}] {url}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
                             # REMOVED: manual futures cleanup - not needed
 
@@ -201,7 +201,7 @@ class Subdomain_Scanner():
                         future = executor.submit(Subdomain_Scanner._subdomain_scanner, url, sub)
                         futures.append(future)  # CHANGED: append instead of add
                         # -  Enumeration:[{c5}] {cls.done}/{total}[/{c5}]
-                        Variables.panel.renderable = (f"Target:[{c5}] {url}[/{c5}]  -  Enumeration:[{c5}] {cls.done}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                        Variables.panel_text = (f"Target:[{c5}] {url}[/{c5}]  -  Enumeration:[{c5}] {cls.done}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
                         # REMOVED: manual futures cleanup - not needed
 
