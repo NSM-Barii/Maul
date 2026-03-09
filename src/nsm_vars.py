@@ -25,7 +25,7 @@ class Variables():
     status_codes = False
 
     max_threads = 250
-    timeout     = 3
+    timeout     = 1
     save        = False
     LOCK        = threading.Lock()
     
@@ -35,15 +35,16 @@ class Variables():
 
     
     console = Console()
-    panel_text = False
+    panel_text = "False"
     panel   = Panel(renderable="Starting", style="bold red", border_style="bold purple", expand=False)
     refresh_per_second = 1
 
  
 
 
-
-
+ 
+    completed_sub = 0
+    completed_dir = 0
     # COLLECT ALL ERRORS
     errors = 0
 

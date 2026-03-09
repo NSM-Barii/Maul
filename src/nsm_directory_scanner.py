@@ -82,7 +82,7 @@ class Directory_Scanner():
     
 
     @classmethod
-    def _directory_scanner(cls, subdomain, dir, mutations=False, CONSOLE=console, verbose=True):
+    def _directory_scanner(cls, subdomain, dir, mutations=False, CONSOLE=console, verbose=False):
         """Subdomain scan happens here"""
 
 
@@ -97,10 +97,10 @@ class Directory_Scanner():
 
         try: 
             
-            cls.done += 1
-            url = f"https://{subdomain}/{dir}"
+            with Variables.LOCK: cls.done += 1
+            url = f"http://{subdomain}/{dir}"
 
-            response = requests.get(url=url, timeout=int(Variables.timeout), allow_redirects=False)
+            response = requests.get(url=url, timeout=int(Variables.timeout), allow_redirects=False, verify=False)
             code     = response.status_code
             headers  = response.headers
            
@@ -114,7 +114,7 @@ class Directory_Scanner():
 
 
                     CONSOLE.print(f"[{c1}][[{cc}]{code}[/{cc}]][/{c1}] {url}")
-                    Variables.found_subs.append(url)
+                    Variables.found_dirs.append(url)
                     return True
 
 
@@ -144,8 +144,8 @@ class Directory_Scanner():
         c6 = "bold red"
 
 
-        futures = set()
-        total   = len(wordlist)
+        futures = []
+        total   = len(wordlist) * len(subdomains)  # CHANGED: Total = dirs × subdomains
 
 
         try: max_threads = int(max_threads)
@@ -154,25 +154,27 @@ class Directory_Scanner():
 
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
-                
+
             try:
 
+                # OPTIMIZATION: Submit all tasks at once (executor handles queue)
                 for domain in subdomains:
                     for dir in wordlist:
-
                         future = executor.submit(Directory_Scanner._directory_scanner, domain, dir)
-                        futures.add(future)
-                        Variables.panel_text = (f"Target:[{c5}] {domain}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.d_name}[/{c5}]  -  Status_Codes:[{c5}] {Variables.status_codes}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
-                    
+                        futures.append(future)  # CHANGED: append instead of add
 
+                # OPTIMIZATION: Update panel less frequently (not in loop)
+                CONSOLE.print(f"[{c5}][*] Submitted {total} directory scan tasks across {len(subdomains)} subdomains")
+
+                # OPTIMIZATION: Wait for all futures to complete
                 for future in futures:
                     future.result()
 
-            
+
             except Exception as e: CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}"); Variables.errors += 1
-            
-    
-            CONSOLE.print(f"[{c1}][+] Scan Results:[/{c1}] {len(Variables.found_dirs)}/{total}")
+
+
+            CONSOLE.print(f"[{c1}][+] Directory Scan Results:[/{c1}] {len(Variables.found_dirs)}/{total}")
     
     
     @staticmethod

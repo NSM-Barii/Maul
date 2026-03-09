@@ -35,8 +35,9 @@ class Run():
         Variables.console.print(f"\n[yellow][*] Background Thread started")
 
         while True:
-
-            Variables.panel.renderable = Variables.panel_text
+            
+            text = Variables.panel_text
+            Variables.panel.renderable = text
 
             time.sleep(1)
 
@@ -51,7 +52,7 @@ class Run():
         with Live(Variables.panel, console=Variables.console, refresh_per_second=Variables.refresh_per_second):
 
 
-            #threading.Thread(target=Run.update, args=(), daemon=True).start()
+            threading.Thread(target=Run.update, args=(), daemon=True).start()
             
 
             if Variables.save: File_Saver.make_path()
