@@ -56,7 +56,7 @@ class Reverse_IP_Domain():
                 for word in file:
                     ip = word.strip().split('\t'); ip = ''.join(ip)
                     console.print(ip)
-                    Variables.panel.renderable = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                    Variables.panel_text = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
                     valid_ips.add(ip)
 
             if verbose: console.print(f"\n\n[{c1}][+] Successfully sanitized list <-- ips.txt ")

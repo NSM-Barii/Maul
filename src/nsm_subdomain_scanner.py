@@ -121,7 +121,7 @@ class Subdomain_Scanner():
 
 
     @classmethod
-    def _subdomain_scanner(cls, domain, sub, mutations=False, CONSOLE=console, verbose=False):
+    def _subdomain_scanner(cls, domain, sub, total, mutations=False, CONSOLE=console, verbose=False):
         """Subdomain scan happens here"""
 
 
@@ -136,10 +136,14 @@ class Subdomain_Scanner():
 
         try:
 
-            cls.done += 1
- 
             subdomain = (f"{sub}.{domain}")
             rdata = dns.resolver.resolve(subdomain, "A")
+
+            # Update counter and panel text with FRESH values
+            with Variables.LOCK:
+                Variables.completed_sub += 1
+                # Rebuild f-string here with current cls.done value
+                Variables.panel_text = f"Target:[{c5}] {domain}[/{c5}]  -  Enumeration:[{c5}] {Variables.completed_sub}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
             if rdata:
 
@@ -196,22 +200,21 @@ class Subdomain_Scanner():
 
 
                 elif url:
-                    print("2")
-                    for sub in wordlist:
 
-                        # REMOVED: if len(futures) < max_threads check - executor handles queue automatically
-                        # REMOVED: time.sleep(0.1) - was killing performance
-                        future = executor.submit(Subdomain_Scanner._subdomain_scanner, url, sub)
-                        futures.append(future)  # CHANGED: append instead of add
-                        # -  Enumeration:[{c5}] {cls.done}/{total}[/{c5}]
-                        Variables.panel.renderable = (f"Target:[{c5}] {url}[/{c5}]  -  Enumeration:[{c5}] {cls.done}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                    # OPTIMIZATION: Use iterator instead of submitting all at once
+                    task_iter = ((url, sub, total) for sub in wordlist)
 
-                        # REMOVED: manual futures cleanup - not needed
+                    # Submit first batch (max_threads * 2 for buffer)
+                    futures = {executor.submit(Subdomain_Scanner._subdomain_scanner, *task)
+                              for task in itertools.islice(task_iter, max_threads * 2)}
 
+                    while futures:
+                        # Wait for next task to complete
+                        done, futures = wait(futures, return_when=FIRST_COMPLETED)
 
-                # ADDED: Wait for all futures to complete
-                for future in futures:
-                    future.result()
+                        # Schedule new tasks to replace completed ones
+                        for task in itertools.islice(task_iter, len(done)):
+                            futures.add(executor.submit(Subdomain_Scanner._subdomain_scanner, *task))
 
 
             except Exception as e: CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}"); Variables.errors += 1
