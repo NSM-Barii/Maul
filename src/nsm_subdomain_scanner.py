@@ -187,6 +187,20 @@ class Subdomain_Scanner():
             if verbose: CONSOLE.print(f"[{c7}][-] Exception Error:[{c2}] {e}")
             Variables.errors += 1; return False
         
+    
+    
+    @classmethod
+    def _subdomain_scanner_new(cls, CONSOLE=console, verbose=True):
+        """This will use a new library for faster resolving"""
+
+        import asyncio, aiodns, aiohttp
+
+        sub, domain = Subdomain_Scanner._iter_controller()
+        subdomain = (f"{sub}.{domain}")
+
+        
+        async with session.get(f"https://{subdomain}", 'A') as resp:
+
 
     @classmethod
     def _threader(cls, max_threads, CONSOLE=console, verbose=True):
