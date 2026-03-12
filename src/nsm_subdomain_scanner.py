@@ -230,7 +230,7 @@ class Subdomain_Scanner():
                     cls.scan = False
                     break
         
-        if cls.scanned == cls.total: CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{cls.total}")
+        if cls.scanned > cls.total / 2: CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{cls.total}")
 
     
     @staticmethod
