@@ -222,14 +222,14 @@ class Subdomain_Scanner():
                     Variables.panel_text = f"Target:[{c5}] {cls.current_sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
             
 
-                except KeyboardInterrupt as e:  CONSOLE.print(f"[{c6}][-] Exception Error:[{c5}] {e}"); Variables.errors += 1; cls.scan = False
+                except KeyboardInterrupt as e:  CONSOLE.print(f"[{c6}][-] Exception Error:[{c5}] {e}"); Variables.errors += 1; cls.scan = False; exit()
                 except Exception as e: Variables.errors += 1; cls.scan = False
 
-            
-            if len(futures) < 3:
-                time.sleep(3)
-                CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{cls.total}")
-    
+
+                if not cls.creations:
+                    cls.scan = False
+                    CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{cls.total}")
+        
     
     @staticmethod
     def main():
