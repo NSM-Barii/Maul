@@ -229,6 +229,7 @@ class Subdomain_Scanner():
                 if not cls.creations:
                     cls.scan = False
                     CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{cls.total}")
+                    return False
         
     
     @staticmethod
