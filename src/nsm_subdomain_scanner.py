@@ -185,18 +185,18 @@ class Subdomain_Scanner():
             try:
 
                 if domains:
-                    wordlist_iter = ((domain, sub) for domain in domains for sub in wordlist)
+                    wordlist_iter = ((domain, sub) for domain in domains for sub in wordlist); total = total * len(domains)
                 elif url:
                     wordlist_iter = ((url, sub) for sub in wordlist)
 
                 for target, sub in wordlist_iter:
 
                     while len(futures) >= max_threads:
-                        futures = [f for f in futures if not f.done()]
 
-                    futures.append(executor.submit(Subdomain_Scanner._subdomain_scanner, target, sub, total))
+                        futures.append(executor.submit(Subdomain_Scanner._subdomain_scanner, target, sub, total))
+
                     futures = [f for f in futures if not f.done()]
-                    Variables.panel_text = f"Target:[{c5}] {sub}.{target}[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
+                    Variables.panel_text = f"Target:[{c5}] {sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
 
 
@@ -204,6 +204,7 @@ class Subdomain_Scanner():
 
             # dsf
             if cls.scanned == total:
+                time.sleep(3)
                 CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{total}")
     
     

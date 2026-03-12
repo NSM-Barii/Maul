@@ -113,7 +113,7 @@ class Directory_Scanner():
                     elif code in [300,301,302,303,304]: cc = c2
 
 
-                    CONSOLE.print(f"[{c1}][[{cc}]{code}[/{cc}]][/{c1}] {url}")
+                    CONSOLE.print(f"[{c1}][[{cc}]{code}[/{cc}]][/{c1}][white] {url}")
                     Variables.found_dirs.append(url)
                     return True
 
