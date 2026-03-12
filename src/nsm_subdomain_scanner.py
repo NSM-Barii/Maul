@@ -214,11 +214,9 @@ class Subdomain_Scanner():
             while cls.scan:
 
                 try:
+                    
+                    executor.submit(Subdomain_Scanner._subdomain_scanner)
 
-                    while len(futures) < max_threads and cls.scan:
-                        futures.append(executor.submit(Subdomain_Scanner._subdomain_scanner))
-
-                    futures = [f for f in futures if not f.done()]
                     Variables.panel_text = f"Target:[{c5}] {cls.current_sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
             
 
