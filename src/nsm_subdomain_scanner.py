@@ -193,9 +193,8 @@ class Subdomain_Scanner():
                             while len(futures) < max_threads:
 
                                 futures.append(executor.submit(Subdomain_Scanner._subdomain_scanner, domain, sub))
-                                Variables.panel.renderable = (f"Target:[{c5}] {url}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
-
+                            Variables.panel.renderable = (f"Target:[{c5}] {sub}.{domain}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
                             futures = [f for f in futures if not f.done()]                  
 
 
