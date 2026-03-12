@@ -35,6 +35,7 @@ class Directory_Scanner():
     scan = True
 
 
+
     @staticmethod
     def _dir_sanitzer(wordlist, CONSOLE=console, verbose=True) -> list:
         """This method will be responsible for santizing the subdomain wordlist"""
@@ -164,7 +165,7 @@ class Directory_Scanner():
                     # OPTIMIZATION: Submit all tasks at once (executor handles queue)
                     for domain in subdomains:
                         for dir in wordlist:
-                            while len(futures) < max_threads:    
+                            while len(futures) < max_threads and cls.scan:    
                                 futures.append(executor.submit(Directory_Scanner._directory_scanner, domain, dir))  
 
                             futures = [f for f in futures if not f.done()]

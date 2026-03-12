@@ -34,8 +34,35 @@ class Subdomain_Scanner():
     
     done = 0
     scan = True
+    creations = []
+    total = 0
+    current_sub = False
 
 
+    
+    @classmethod
+    def _iter_controller(cls, url=False, domains=False, subdomains=False, CONSOLE=console):
+        """This will be respomsible for passing domain and sub arguments"""
+       
+
+        if not cls.creations:
+            if domains: targets = [domain for domain in domains] 
+            else:       targets = []; targets.append(url)
+            cls.total = len(targets) * len(subdomains)
+            for dom in targets:
+                for sub in subdomains:
+                    console.print(sub, dom)
+                    cls.creations.append((sub, dom))
+            
+            CONSOLE.print(f"Iterations made: {len(cls.creations)}"); return False
+        
+        s, d = cls.creations.pop(0)
+        if cls.current_sub != s: cls.current_sub = s
+        console.print(s,d)
+        return s,d
+         
+
+        
     @staticmethod
     def _sub_sanitzer(wordlist, CONSOLE=console, verbose=True) -> list:
         """This method will be responsible for santizing the subdomain wordlist"""
@@ -120,9 +147,8 @@ class Subdomain_Scanner():
         except Exception as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
     
 
-
     @classmethod
-    def _subdomain_scanner(cls, domain, sub, total, mutations=False, CONSOLE=console, verbose=False):
+    def _subdomain_scanner(cls, mutations=False, CONSOLE=console, verbose=False):
         """Subdomain scan happens here"""
 
 
@@ -134,6 +160,7 @@ class Subdomain_Scanner():
         c7 = "bold red"
 
         if not cls.scan: return Exception
+        with Variables.LOCK: sub, domain = Subdomain_Scanner._iter_controller()
 
 
 
@@ -161,9 +188,8 @@ class Subdomain_Scanner():
             Variables.errors += 1; return False
         
 
-
     @classmethod
-    def _threader(cls, max_threads, url, domains, wordlist, CONSOLE=console, verbose=True):
+    def _threader(cls, max_threads, CONSOLE=console, verbose=True):
         """This will iter through and thread --> _subdomain_scanner"""
 
 
@@ -174,8 +200,7 @@ class Subdomain_Scanner():
         c6 = "bold red"
 
 
-        futures = []  # CHANGED: list instead of set for easier iteration
-        total   = len(wordlist)
+        futures = []  
         cls.scanned = 0
 
 
@@ -188,27 +213,20 @@ class Subdomain_Scanner():
 
                 try:
 
-                    if domains:
-                        wordlist_iter = ((domain, sub) for domain in domains for sub in wordlist); total = total * len(domains)
-                    elif url:
-                        wordlist_iter = ((url, sub) for sub in wordlist)
+                    while len(futures) < max_threads and cls.scan:
+                        futures.append(executor.submit(Subdomain_Scanner._subdomain_scanner))
 
-                    for target, sub in wordlist_iter:
-
-                        while len(futures) < max_threads:
-                            futures.append(executor.submit(Subdomain_Scanner._subdomain_scanner, target, sub, total))
-
-                        futures = [f for f in futures if not f.done()]
-                        Variables.panel_text = f"Target:[{c5}] {sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
+                    futures = [f for f in futures if not f.done()]
+                    Variables.panel_text = f"Target:[{c5}] {cls.current_sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
             
 
-                except KeyboardInterrupt as e:  CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}"); Variables.errors += 1; cls.scan = False
+                except KeyboardInterrupt as e:  CONSOLE.print(f"[{c6}][-] Exception Error:[{c5}] {e}"); Variables.errors += 1; cls.scan = False
                 except Exception as e: Variables.errors += 1; cls.scan = False
 
             # dsf
-            if cls.scanned == total:
+            if not cls.creations:
                 time.sleep(3)
-                CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{total}")
+                CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{cls.total}")
     
     
     @staticmethod
@@ -230,7 +248,8 @@ class Subdomain_Scanner():
         
         p = "=" * 10
         console.print(f"[bold red]\n{p}  Subdomain Enumeration  {p}\n")
-        Subdomain_Scanner._threader(max_threads=max_threads, url=url, domains=domains, wordlist=wordlist)
+        Subdomain_Scanner._iter_controller(url=url, domains=domains, subdomains=wordlist)
+        Subdomain_Scanner._threader(max_threads=max_threads)
     
         
 
