@@ -200,20 +200,14 @@ class Subdomain_Scanner():
 
                 elif url:
 
-                    # OPTIMIZATION: Use iterator instead of submitting all at once
-                    task_iter = ((url, sub, total) for sub in wordlist)
+                    for sub in wordlist:
+                        while len(futures) >= max_threads:
 
-                    # Submit first batch (max_threads * 2 for buffer)
-                    futures = {executor.submit(Subdomain_Scanner._subdomain_scanner, *task)
-                              for task in itertools.islice(task_iter, max_threads * 2)}
+                            futures = [f for f in futures if not f.done()]
 
-                    while futures:
-                        # Wait for next task to complete
-                        done, futures = wait(futures, return_when=FIRST_COMPLETED)
+                        futures.append(executor.submit(Subdomain_Scanner._subdomain_scanner, url, sub))
+                        Variables.panel.renderable = (f"Target:[{c5}] {sub}.{url}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")                  
 
-                        # Schedule new tasks to replace completed ones
-                        for task in itertools.islice(task_iter, len(done)):
-                            futures.add(executor.submit(Subdomain_Scanner._subdomain_scanner, *task))
 
 
             except Exception as e: CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}"); Variables.errors += 1
