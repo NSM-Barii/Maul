@@ -136,25 +136,21 @@ class Subdomain_Scanner():
 
         try:
 
+            with Variables.LOCK: Variables.completed_sub += 1; cls.scanned += 1
             subdomain = (f"{sub}.{domain}")
             rdata = dns.resolver.resolve(subdomain, "A")
 
             # Update counter and panel text with FRESH values
-            with Variables.LOCK:
-                Variables.completed_sub += 1
                 # Rebuild f-string here with current cls.done value
-                Variables.panel_text = f"Target:[{c5}] {domain}[/{c5}]  -  Enumeration:[{c5}] {Variables.completed_sub}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
+                #Variables.panel_text = f"Target:[{c5}] {domain}[/{c5}]  -  Enumeration:[{c5}] {Variables.completed_sub}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
             if rdata:
 
                 response = requests.get(url=f"https://{subdomain}")
                 if response.status_code not in [200,204]: return False
                 
-                with Variables.LOCK:
-
-                    CONSOLE.print(f"[{c1}][*][{c2}] {subdomain}")
-                    Variables.found_subs.append(subdomain)
-                    return True
+                CONSOLE.print(f"[{c1}][*][{c2}] {subdomain}")
+                with Variables.LOCK: Variables.found_subs.append(subdomain); return True
 
 
         except Exception as e: 
@@ -177,6 +173,7 @@ class Subdomain_Scanner():
 
         futures = []  # CHANGED: list instead of set for easier iteration
         total   = len(wordlist)
+        cls.scanned = 0
 
 
         try:              max_threads = int(max_threads)
@@ -197,16 +194,17 @@ class Subdomain_Scanner():
                     while len(futures) >= max_threads:
                         futures = [f for f in futures if not f.done()]
 
-                    futures.append(executor.submit(Subdomain_Scanner._subdomain_scanner, target, sub))
+                    futures.append(executor.submit(Subdomain_Scanner._subdomain_scanner, target, sub, total))
                     futures = [f for f in futures if not f.done()]
-                    Variables.panel.renderable = (f"Target:[{c5}] {sub}.{target}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                    Variables.panel_text = f"Target:[{c5}] {sub}.{target}[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
 
 
             except Exception as e: CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}"); Variables.errors += 1
 
-
-            CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{total}")
+            
+            if cls.scanned == total:
+                CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{total}")
     
     
     @staticmethod
