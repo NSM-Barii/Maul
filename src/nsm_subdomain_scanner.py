@@ -202,7 +202,7 @@ class Subdomain_Scanner():
 
             except Exception as e: CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}"); Variables.errors += 1
 
-            
+            # dsf
             if cls.scanned == total:
                 CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{total}")
     
