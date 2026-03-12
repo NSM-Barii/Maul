@@ -51,14 +51,14 @@ class Subdomain_Scanner():
             cls.total = len(targets) * len(subdomains)
             for dom in targets:
                 for sub in subdomains:
-                    console.print(sub, dom)
+                    #console.print(sub, dom)
                     cls.creations.append((sub, dom))
             
             CONSOLE.print(f"Iterations made: {len(cls.creations)}"); return False
         
         s, d = cls.creations.pop(0)
         if cls.current_sub != s: cls.current_sub = s
-        console.print(s,d)
+        #console.print(s,d)
         return s,d
          
 
