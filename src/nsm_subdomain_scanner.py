@@ -64,7 +64,7 @@ class Subdomain_Scanner():
 
         
     @staticmethod
-    def _sub_sanitzer(wordlist, CONSOLE=console, verbose=True) -> list:
+    def _sub_sanitzer(wordlist, CONSOLE=console, verbose=True) -> list: 
         """This method will be responsible for santizing the subdomain wordlist"""
         
         
@@ -229,8 +229,8 @@ class Subdomain_Scanner():
                 if not cls.creations:
                     cls.scan = False
                     break
-
-        CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{cls.total}")
+        
+        if cls.scanned == cls.total: CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{cls.total}")
 
     
     @staticmethod
