@@ -33,6 +33,7 @@ class Subdomain_Scanner():
 
     
     done = 0
+    scan = True
 
 
     @staticmethod
@@ -132,6 +133,8 @@ class Subdomain_Scanner():
         c6 = "green"
         c7 = "bold red"
 
+        if not cls.scan: return Exception
+
 
 
         try:
@@ -181,26 +184,27 @@ class Subdomain_Scanner():
 
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
+            while cls.scan:
 
-            try:
+                try:
 
-                if domains:
-                    wordlist_iter = ((domain, sub) for domain in domains for sub in wordlist); total = total * len(domains)
-                elif url:
-                    wordlist_iter = ((url, sub) for sub in wordlist)
+                    if domains:
+                        wordlist_iter = ((domain, sub) for domain in domains for sub in wordlist); total = total * len(domains)
+                    elif url:
+                        wordlist_iter = ((url, sub) for sub in wordlist)
 
-                for target, sub in wordlist_iter:
+                    for target, sub in wordlist_iter:
 
-                    while len(futures) >= max_threads:
+                        while len(futures) >= max_threads:
+                            futures = [f for f in futures if not f.done()]
+
+                        futures.append(executor.submit(Subdomain_Scanner._subdomain_scanner, target, sub, total))
                         futures = [f for f in futures if not f.done()]
+                        Variables.panel_text = f"Target:[{c5}] {sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
+            
 
-                    futures.append(executor.submit(Subdomain_Scanner._subdomain_scanner, target, sub, total))
-                    futures = [f for f in futures if not f.done()]
-                    Variables.panel_text = f"Target:[{c5}] {sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
-
-
-
-            except Exception as e: CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}"); Variables.errors += 1
+                except KeyboardInterrupt as e:  CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}"); Variables.errors += 1; cls.scan = False
+                except Exception as e:Variables.errors += 1; cls.scan = False
 
             # dsf
             if cls.scanned == total:
