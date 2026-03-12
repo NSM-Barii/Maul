@@ -192,6 +192,7 @@ class Subdomain_Scanner():
                 for target, sub in wordlist_iter:
 
                     while len(futures) >= max_threads:
+                        futures = [f for f in futures if not f.done()]
 
                         futures.append(executor.submit(Subdomain_Scanner._subdomain_scanner, target, sub, total))
 
