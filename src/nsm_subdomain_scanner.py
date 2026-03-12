@@ -226,15 +226,10 @@ class Subdomain_Scanner():
                 except Exception as e: Variables.errors += 1; cls.scan = False
 
 
-                if not cls.creations:
+                if not cls.creations and len(futures) == 0:
                     cls.scan = False
+                    CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{cls.total}")
                     break
-
-            # Wait for remaining futures to complete
-            for future in futures:
-                future.result()
-
-            CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{cls.total}")
 
     
     @staticmethod
