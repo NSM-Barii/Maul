@@ -35,6 +35,10 @@ class Reverse_IP_Domain():
     scan_ssl    = 0
     scan_ptr    = 0
 
+    scan = 0
+    total = 0
+
+
 
 
     @classmethod
@@ -201,6 +205,8 @@ class Reverse_IP_Domain():
 
         try:
 
+            cls.scan += 1
+
             # Reverse DNS lookup using PTR records
             resolver = dns.resolver.Resolver()
             resolver.timeout = 3
@@ -248,6 +254,7 @@ class Reverse_IP_Domain():
 
         max_threads = int(max_threads)
         futures = []
+        cls.total = len(ips)
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
 
@@ -260,7 +267,7 @@ class Reverse_IP_Domain():
                     futures.append(executor.submit(Reverse_IP_Domain._pull_domains_ptr, ip))
 
                     #Variables.panel_text = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
-                    Variables.panel_text = (f"Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                    Variables.panel_text = (f"IP:[{c5}] {cls.scan}/{cls.total}[/{c5}]  -  Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
 
 
