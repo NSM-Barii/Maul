@@ -344,12 +344,17 @@ class Reverse_IP_Domain():
         console.print(f"[bold red]\n{p}  IP Enumeration  {p}\n")
         Reverse_IP_Domain._threader(max_threads=max_threads, ips=ips)
 
-        # Save raw results
+ 
         File_Saver.push_scan_results(data=Variables.found_doms, reverse=True)
 
-        # Save cleaned results for tool usage
-        cleaned_domains = cls._clean_domains(Variables.found_doms)
+        cleaned_domains = Reverse_IP_Domain._clean_domains(Variables.found_doms)
         File_Saver.push_scan_results(data=cleaned_domains, reverse=True, cleaned=True)
+
+
+        console.print(
+            f"\n[bold green]IP Addresses:[/bold green] {len(Variables.ips)}"
+            f"\n[bold green]Domains <-- IPs:[/bold green] {len(cleaned_domains)}\n"
+        )
 
 
 
