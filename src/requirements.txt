@@ -7,3 +7,4 @@ dnspython
 
 aiodns
 aiohttp
+pyOpenSSL
