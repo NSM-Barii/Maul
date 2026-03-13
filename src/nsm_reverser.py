@@ -111,22 +111,85 @@ class Reverse_IP_Domain():
         try:
 
 
-            with socket.create_connection((ip,443), socket.SOCK_STREAM) as s:
-                
+            with socket.create_connection((ip,443), timeout=5) as s:
+
                 context = ssl.create_default_context()
+                context.check_hostname = False
+                context.verify_mode = ssl.CERT_NONE
                 ssl_sock = context.wrap_socket(s, server_hostname=ip)
                 cert = ssl_sock.getpeercert()
-                
-                subject = dict(x[0] for x in cert['subject'])
-                domain = subject.get('commonName') or subject.get('CN')
-                console.print(f"[{c1}][*] SSL:[{c2}] {domain}")
-                Variables.found_doms.append(domain)
+
+                # Extract all domains from certificate
+                domains = set()
+
+                # Get CN from subject
+                if cert.get('subject'):
+                    subject = dict(x[0] for x in cert['subject'])
+                    cn = subject.get('commonName') or subject.get('CN')
+                    if cn:
+                        domains.add(cn)
+
+                # Get all SANs (Subject Alternative Names)
+                if cert.get('subjectAltName'):
+                    for san_type, san_value in cert['subjectAltName']:
+                        if san_type == 'DNS':
+                            domains.add(san_value)
+
+                # Print and store all found domains
+                with Variables.LOCK:
+                    for domain in domains:
+                        console.print(f"[{c1}][*] SSL:[{c2}] {domain}")
+                        if domain not in Variables.found_doms:
+                            Variables.found_doms.append(domain)
 
 
 
 
-        except Exception as e: 
+        except Exception as e:
             if verbose: console.print(f"[{c6}][-] SSL Exception Error:[/{c6}] {e}")
+            Variables.errors +=1
+
+
+    @classmethod
+    def _pull_domains_ptr(cls, ip, verbose=False):
+        """This will pull domains using PTR DNS records"""
+
+
+        c1 = "bold green"
+        c2 = "bold yellow"
+        c4 = "bold blue"
+        c5 = "yellow"
+        c6 = "bold red"
+
+
+
+        try:
+
+            # Reverse DNS lookup using PTR records
+            resolver = dns.resolver.Resolver()
+            resolver.timeout = 3
+            resolver.lifetime = 3
+
+            # Create reverse IP address for PTR lookup
+            rev_ip = dns.reversename.from_address(ip)
+            answers = resolver.resolve(rev_ip, 'PTR')
+
+            with Variables.LOCK:
+                for rdata in answers:
+                    domain = str(rdata).rstrip('.')
+                    console.print(f"[{c1}][*] PTR:[{c2}] {domain}")
+                    if domain not in Variables.found_doms:
+                        Variables.found_doms.append(domain)
+
+
+        except dns.resolver.NXDOMAIN:
+            if verbose: console.print(f"[{c6}][-] PTR: No PTR record for {ip}")
+            Variables.errors +=1
+        except dns.resolver.NoAnswer:
+            if verbose: console.print(f"[{c6}][-] PTR: No answer for {ip}")
+            Variables.errors +=1
+        except Exception as e:
+            if verbose: console.print(f"[{c6}][-] PTR Exception Error:[/{c6}] {e}")
             Variables.errors +=1
     
 
@@ -150,16 +213,16 @@ class Reverse_IP_Domain():
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
 
             try:
-            
+
                 for ip in ips:
-                    while len(futures) < max_threads:
-             
-                        futures.append(executor.submit(Reverse_IP_Domain._pull_domains_socket, ip))
+                    # Submit all three lookup methods for each IP
+                    futures.append(executor.submit(Reverse_IP_Domain._pull_domains_socket, ip))
+                    futures.append(executor.submit(Reverse_IP_Domain._pull_domains_ssl, ip))
+                    futures.append(executor.submit(Reverse_IP_Domain._pull_domains_ptr, ip))
 
-                    futures = [f for f in futures if not f.done()]    
-                    Variables.panel.renderable = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                    Variables.panel_text = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
-            
+
 
             except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}");  Variables.errors +=1
 
