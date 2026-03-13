@@ -110,32 +110,49 @@ class Reverse_IP_Domain():
 
         try:
 
+            # Create socket connection
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(5)
+            sock.connect((ip, 443))
 
-            with socket.create_connection((ip,443), timeout=5) as s:
+            # Wrap with SSL
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
 
-                context = ssl.create_default_context()
-                context.check_hostname = False
-                context.verify_mode = ssl.CERT_NONE
-                ssl_sock = context.wrap_socket(s, server_hostname=ip)
-                cert = ssl_sock.getpeercert()
+            ssl_sock = context.wrap_socket(sock, server_hostname=ip)
 
-                # Extract all domains from certificate
-                domains = set()
+            # Get certificate in binary DER format
+            cert_bin = ssl_sock.getpeercert(binary_form=True)
+            ssl_sock.close()
 
-                # Get CN from subject
-                if cert.get('subject'):
-                    subject = dict(x[0] for x in cert['subject'])
-                    cn = subject.get('commonName') or subject.get('CN')
-                    if cn:
-                        domains.add(cn)
+            # Parse certificate using x509
+            import OpenSSL.crypto
+            x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_ASN1, cert_bin)
 
-                # Get all SANs (Subject Alternative Names)
-                if cert.get('subjectAltName'):
-                    for san_type, san_value in cert['subjectAltName']:
-                        if san_type == 'DNS':
-                            domains.add(san_value)
+            # Extract all domains from certificate
+            domains = set()
 
-                # Print and store all found domains
+            # Get CN from subject
+            subject = x509.get_subject()
+            cn = subject.CN
+            if cn:
+                domains.add(cn)
+
+            # Get all SANs (Subject Alternative Names)
+            for i in range(x509.get_extension_count()):
+                ext = x509.get_extension(i)
+                if 'subjectAltName' in str(ext.get_short_name()):
+                    san_str = str(ext)
+                    # Parse SANs from the extension string
+                    for san in san_str.split(','):
+                        san = san.strip()
+                        if san.startswith('DNS:'):
+                            domain = san.replace('DNS:', '')
+                            domains.add(domain)
+
+            # Print and store all found domains
+            if domains:
                 with Variables.LOCK:
                     for domain in domains:
                         console.print(f"[{c1}][*] SSL:[{c2}] {domain}")
@@ -145,8 +162,14 @@ class Reverse_IP_Domain():
 
 
 
+        except socket.timeout:
+            if verbose: console.print(f"[{c6}][-] SSL: Timeout connecting to {ip}:443")
+            Variables.errors +=1
+        except ConnectionRefusedError:
+            if verbose: console.print(f"[{c6}][-] SSL: Connection refused for {ip}:443")
+            Variables.errors +=1
         except Exception as e:
-            if verbose: console.print(f"[{c6}][-] SSL Exception Error:[/{c6}] {e}")
+            if verbose: console.print(f"[{c6}][-] SSL Exception Error:[{c2}] {e}")
             Variables.errors +=1
 
 

@@ -1,0 +1,6 @@
+rich
+requests
+dnspython
+aiodns
+aiohttp
+pyOpenSSL
