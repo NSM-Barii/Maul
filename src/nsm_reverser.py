@@ -355,7 +355,7 @@ class Reverse_IP_Domain():
         File_Saver.push_scan_results(data=Variables.found_doms, reverse=True)
 
         cleaned_domains = Reverse_IP_Domain._clean_domains(Variables.found_doms)
-        File_Saver.push_scan_results(data=cleaned_domains, reverse=True, cleaned=True)
+        File_Saver.push_scan_results(data=cleaned_domains, reverse=True)
 
 
         console.print(
