@@ -288,7 +288,7 @@ class Reverse_IP_Domain():
         c1 = "bold green"
         c5 = "yellow"
 
-        cleaned = set()
+        cleaned = []
 
         for domain in domains:
             domain = domain.strip()
@@ -299,7 +299,7 @@ class Reverse_IP_Domain():
             if domain.startswith('*'):
                 root = domain.replace('*.', '')
                 if root and '.' in root:
-                    cleaned.add(root.lower())
+                    cleaned.append(root.lower())
                 continue
 
             if any(x in domain.lower() for x in ['certificate', 'waf', 'traefik.default', 'origin', 'reported', 'attack behavior']):
@@ -324,7 +324,7 @@ class Reverse_IP_Domain():
             if domain.count('.') == 3 and all(part.isdigit() for part in domain.split('.')):
                 continue
 
-            cleaned.add(domain.lower())
+            cleaned.append(domain.lower())
 
         console.print(f"[{c1}][+] Cleaned domains:[{c5}] {len(domains)} → {len(cleaned)}")
         return sorted(cleaned)
