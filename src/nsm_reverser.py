@@ -262,8 +262,9 @@ class Reverse_IP_Domain():
                     Variables.panel_text = (f"IP:[{c5}] {cls.scan}/{cls.total}[/{c5}]  -  Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
 
-
+               
             except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}");  Variables.errors +=1
+            
 
 
 
@@ -287,7 +288,8 @@ class Reverse_IP_Domain():
         c1 = "bold green"
         c5 = "yellow"
 
-        cleaned = []
+        cleaned = set()
+        Variables.panel_text = (f"[{c5}] Cleaning and Saving Results!")
 
         for domain in domains:
             domain = domain.strip()
@@ -298,7 +300,7 @@ class Reverse_IP_Domain():
             if domain.startswith('*'):
                 root = domain.replace('*.', '')
                 if root and '.' in root:
-                    cleaned.append(root.lower())
+                    cleaned.add(root.lower())
                 continue
 
             if any(x in domain.lower() for x in ['certificate', 'waf', 'traefik.default', 'origin', 'reported', 'attack behavior']):
@@ -323,10 +325,11 @@ class Reverse_IP_Domain():
             if domain.count('.') == 3 and all(part.isdigit() for part in domain.split('.')):
                 continue
 
-            cleaned.append(domain.lower())
+            cleaned.add(domain.lower()) 
+        
 
-        console.print(f"[{c1}][+] Cleaned domains:[{c5}] {len(domains)} → {len(cleaned)}")
-        return cleaned
+
+        return sorted(cleaned)
 
     @classmethod
     def main(cls):
@@ -349,12 +352,13 @@ class Reverse_IP_Domain():
         cleaned_domains = Reverse_IP_Domain._clean_domains(Variables.found_doms)
         File_Saver.push_scan_results(data=cleaned_domains, reverse=True)
 
-
+        
+        c1 = "bold green"
         console.print(
-            f"\n[bold green]IP Addresses:[/bold green] {len(Variables.ips)}"
-            f"\n[bold green]Domains <-- IPs:[/bold green] {len(cleaned_domains)}\n"
+            f"\n\n[{c1}][+] Cleaned domains:[/{c1}] {len(domains)} → {len(cleaned_domains)}"
+            f"\n[{c1}][+] IP Addresses:[{c1}] {len(ips)}"
+            f"\n[{c1}][+] Domains <-- IPs:[{c1}] {len(cleaned_domains)}\n"
         )
-
 
 
 
