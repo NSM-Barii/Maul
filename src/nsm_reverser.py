@@ -9,7 +9,7 @@ from rich.panel import Panel
 
 
 # ETC IMPORTS
-import dns.resolver, socket, ssl, sys, time
+import dns.resolver, socket, ssl, sys, time, re
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
@@ -269,20 +269,87 @@ class Reverse_IP_Domain():
 
 
     @classmethod
+    def _clean_domains(cls, domains):
+        """
+        Clean domain list for external tool usage
+
+        Filters out:
+        - Wildcard domains (but saves root domain: *.example.com → example.com)
+        - Certificate junk (CloudFlare Origin, WAF, Traefik default certs)
+        - PTR noise (ptr.network, centraldnserver.com)
+        - Hash domains (32+ char hex strings from default certificates)
+        - Invalid domains (no TLD, single words, malformed)
+        - IP addresses formatted as domains
+        - Empty lines
+
+        Returns: Sorted list of clean, usable domains
+        """
+
+        c1 = "bold green"
+        c5 = "yellow"
+
+        cleaned = set()
+
+        for domain in domains:
+            domain = domain.strip()
+
+            if not domain:
+                continue
+
+            if domain.startswith('*'):
+                root = domain.replace('*.', '')
+                if root and '.' in root:
+                    cleaned.add(root.lower())
+                continue
+
+            if any(x in domain.lower() for x in ['certificate', 'waf', 'traefik.default', 'origin', 'reported', 'attack behavior']):
+                continue
+
+            if any(x in domain for x in ['ptr.network', 'centraldnserver.com', 'ip-ptr.tech', 'static.hostiran.name', 'localhost']):
+                continue
+
+            if len(domain.split('.')[0]) > 30 and domain.split('.')[0].replace('-', '').isalnum():
+                continue
+
+            if re.match(r'^[\d\-\.]+\.(static|ip-ptr|ptr)', domain):
+                continue
+
+            if '.' not in domain:
+                continue
+
+            tld = domain.split('.')[-1]
+            if not tld.isalpha() or len(tld) < 2 or len(tld) > 10:
+                continue
+
+            if domain.count('.') == 3 and all(part.isdigit() for part in domain.split('.')):
+                continue
+
+            cleaned.add(domain.lower())
+
+        console.print(f"[{c1}][+] Cleaned domains:[{c5}] {len(domains)} → {len(cleaned)}")
+        return sorted(cleaned)
+
+    @classmethod
     def main(cls):
         """This will control domain <-- ip  // mapping"""
 
 
         ips         = Variables.ips
         max_threads = Variables.max_threads
-        
-        
+
+
         ips = Reverse_IP_Domain._ips_sanitzer(ips=ips)
 
         p = "=" * 10
         console.print(f"[bold red]\n{p}  IP Enumeration  {p}\n")
         Reverse_IP_Domain._threader(max_threads=max_threads, ips=ips)
+
+        # Save raw results
         File_Saver.push_scan_results(data=Variables.found_doms, reverse=True)
+
+        # Save cleaned results for tool usage
+        cleaned_domains = cls._clean_domains(Variables.found_doms)
+        File_Saver.push_scan_results(data=cleaned_domains, reverse=True, cleaned=True)
 
 
 
