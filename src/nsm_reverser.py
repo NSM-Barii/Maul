@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 # NSM IMPORTS
 from nsm_vars import Variables
-
+from nsm_database import File_Saver
 
 
 # CONSTANTS
@@ -227,7 +227,6 @@ class Reverse_IP_Domain():
             except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}");  Variables.errors +=1
 
 
-    
 
     @classmethod
     def main(cls):
@@ -243,6 +242,8 @@ class Reverse_IP_Domain():
         p = "=" * 10
         console.print(f"[bold red]\n{p}  IP Enumeration  {p}\n")
         Reverse_IP_Domain._threader(max_threads=max_threads, ips=ips)
+        File_Saver.push_scan_results(data=Variables.found_doms, reverse=True)
+
 
 
 
