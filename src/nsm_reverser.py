@@ -238,6 +238,8 @@ class Reverse_IP_Domain():
 
         max_threads = int(max_threads)
         futures = []
+        Variables.panel_text = (f"Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+
 
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:

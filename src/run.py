@@ -41,7 +41,7 @@ class Run():
             text = Variables.panel_text
             Variables.panel.renderable = text
 
-            time.sleep(1)
+            time.sleep(0.0005)
 
     
 
