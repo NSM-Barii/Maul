@@ -187,58 +187,6 @@ class Subdomain_Scanner():
             if verbose: CONSOLE.print(f"[{c7}][-] Exception Error:[{c2}] {e}")
             Variables.errors += 1; return False
         
-    
-    
-    @classmethod
-    async def _subdomain_scanner_new(cls, resolver, session, CONSOLE=console, verbose=False):
-        """This will use a new library for faster resolving"""
-
-        c1 = "bold green"
-        c2 = "bold yellow"
-
-        if not cls.scan: return
-        with Variables.LOCK:
-            sub, domain = Subdomain_Scanner._iter_controller()
-            cls.scanned += 1
-
-        subdomain = f"{sub}.{domain}"
-
-        try:
-            result = await resolver.query(subdomain, 'A')
-
-            if result:
-                async with session.get(f"https://{subdomain}") as resp:
-                    if resp.status in [200, 204]:
-                        CONSOLE.print(f"[{c1}][*][{c2}] {subdomain}")
-                        with Variables.LOCK:
-                            Variables.found_subs.append(subdomain)
-                            return True
-        except:
-            Variables.errors += 1
-            return False
-
-
-    @classmethod
-    async def _threader_new(cls, max_threads, CONSOLE=console):
-        """Async threader using aiodns + aiohttp"""
-        import asyncio, aiodns, aiohttp
-
-        c1 = "bold green"
-        c5 = "yellow"
-
-        cls.scanned = 0
-        resolver = aiodns.DNSResolver()
-
-        async with aiohttp.ClientSession() as session:
-            tasks = []
-            for _ in range(cls.total):
-                task = cls._subdomain_scanner_new(resolver, session, CONSOLE)
-                tasks.append(task)
-                Variables.panel_text = f"Target:[{c5}] {cls.current_sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]"
-
-            await asyncio.gather(*tasks)
-
-        CONSOLE.print(f"\n[{c1}][+] Subdomain Enumeration Results:[/{c1}] {len(Variables.found_subs)}/{cls.total}")
 
 
     @classmethod
@@ -304,10 +252,7 @@ class Subdomain_Scanner():
         p = "=" * 10
         console.print(f"[bold red]\n{p}  Subdomain Enumeration  {p}\n")
         Subdomain_Scanner._iter_controller(url=url, domains=domains, subdomains=wordlist)
-
-        import asyncio
-        asyncio.run(Subdomain_Scanner._threader_new(max_threads=max_threads))
-        #Subdomain_Scanner._threader(max_threads=max_threads)
+        Subdomain_Scanner._threader(max_threads=max_threads)
     
         
 
