@@ -31,6 +31,11 @@ class Reverse_IP_Domain():
     """This class will be responsible for pulling domains from ips"""
 
 
+    scan_socket = 0
+    scan_ssl    = 0
+    scan_ptr    = 0
+
+
 
     @classmethod
     def _ips_sanitzer(cls, ips, verbose=True) -> set:
@@ -65,7 +70,6 @@ class Reverse_IP_Domain():
         except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}"); sys.exit()
         
 
- 
     @classmethod
     def _pull_domains_socket(cls, ip, verbose=False):
         """This will pull domains using the socket library"""
@@ -88,6 +92,7 @@ class Reverse_IP_Domain():
             with Variables.LOCK:
                 console.print(f"[{c1}][*] Socket:[{c2}] {domain}")
                 Variables.found_doms.append(domain)
+                cls.scan_socket += 1
 
 
         except Exception as e: 
@@ -156,6 +161,7 @@ class Reverse_IP_Domain():
                 with Variables.LOCK:
                     for domain in domains:
                         console.print(f"[{c1}][*] SSL:[{c2}] {domain}")
+                        cls.scan_ssl += 1
                         if domain not in Variables.found_doms:
                             Variables.found_doms.append(domain)
 
@@ -201,6 +207,7 @@ class Reverse_IP_Domain():
                 for rdata in answers:
                     domain = str(rdata).rstrip('.')
                     console.print(f"[{c1}][*] PTR:[{c2}] {domain}")
+                    cls.scan_ptr += 1
                     if domain not in Variables.found_doms:
                         Variables.found_doms.append(domain)
 
@@ -243,7 +250,8 @@ class Reverse_IP_Domain():
                     futures.append(executor.submit(Reverse_IP_Domain._pull_domains_ssl, ip))
                     futures.append(executor.submit(Reverse_IP_Domain._pull_domains_ptr, ip))
 
-                    Variables.panel_text = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                    #Variables.panel_text = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                    Variables.panel_text = (f"Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
 
 

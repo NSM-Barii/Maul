@@ -72,14 +72,15 @@ class File_Saver():
             if cls.path_dir.exists():
 
 
-                pathway = cls.path if not reverse else cls.path_reverse
+                if reverse: pathway = cls.path_reverse
+                else: pathway = cls.path
 
                 with open(pathway, "w") as file:
                     
                     ahh = ''.join(d for d in data)
                     file.write(ahh)
 
-                console.print(f"[bold green][+] Data Successfully pushed")
+                console.print(f"[bold green][+] Data Successfully pushed:[/bold green] {pathway}")
                  
 
             else: console.print(f"\n[bold red][-] Your missing the database/saved_scans directory, please check README.md for info you skidd!!!"); sys.exit()
