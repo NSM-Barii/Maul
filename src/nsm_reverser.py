@@ -355,7 +355,7 @@ class Reverse_IP_Domain():
         
         c1 = "bold green"
         console.print(
-            f"\n\n[{c1}][+] Cleaned domains:[/{c1}] {len(domains)} → {len(cleaned_domains)}"
+            f"\n\n[{c1}][+] Cleaned domains:[/{c1}] {len(Variables.found_doms)} → {len(cleaned_domains)}"
             f"\n[{c1}][+] IP Addresses:[{c1}] {len(ips)}"
             f"\n[{c1}][+] Domains <-- IPs:[{c1}] {len(cleaned_domains)}\n"
         )
