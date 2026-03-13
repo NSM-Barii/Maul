@@ -1,0 +1,159 @@
+HOW PTR AND SSL WORK TOGETHER IN MAUL
+======================================
+
+THE COMPLETE PICTURE
+---------------------
+PTR and SSL are two different methods that find domains from IP addresses.
+They work together to give you the most complete results.
+
+Think of it like this:
+  PTR  = Asking "Who officially owns this IP?"
+  SSL  = Asking "What websites are actually running on this IP?"
+
+
+WHAT EACH METHOD FINDS
+-----------------------
+
+PTR (DNS Reverse Lookup):
+  - Official domain registered in DNS
+  - What the IP owner set as the reverse DNS
+  - Usually 0-1 domain per IP
+
+  Example Results:
+    IP: 8.8.8.8
+    PTR finds: dns.google
+
+SSL (Certificate Scanning):
+  - ALL domains on the HTTPS certificate
+  - Includes main domain + all subdomains
+  - Can be 1-100+ domains per IP
+
+  Example Results:
+    IP: 140.82.121.4
+    SSL finds: github.com, www.github.com, api.github.com, *.github.com
+
+
+WHY USE BOTH?
+-------------
+
+1. They Find Different Data
+   PTR might find: server-123.hosting.com
+   SSL might find: company.com, www.company.com, api.company.com
+
+2. One Fills Gaps Where the Other Fails
+   - Cloud IPs often have NO PTR record → SSL still works
+   - Some IPs don't run HTTPS → PTR still works
+
+3. Maximum Coverage
+   PTR + SSL together = Most domains found
+
+
+REAL WORLD EXAMPLE
+-------------------
+
+Input IP: 104.16.132.229 (Cloudflare)
+
+PTR Method:
+  Query: 229.132.16.104.in-addr.arpa
+  Result: ❌ No PTR record (Cloudflare doesn't set these)
+
+SSL Method:
+  Connect: 104.16.132.229:443
+  Certificate contains:
+    ✅ example.com
+    ✅ www.example.com
+    ✅ *.example.com
+    ✅ cdn.example.com
+
+TOTAL FOUND: 4 domains (SSL saved the day!)
+
+
+Another Example: 8.8.8.8 (Google DNS)
+
+PTR Method:
+  Query: 8.8.8.8.in-addr.arpa
+  Result: ✅ dns.google
+
+SSL Method:
+  Connect: 8.8.8.8:443
+  Result: ❌ Connection refused (port 443 closed)
+
+TOTAL FOUND: 1 domain (PTR saved the day!)
+
+
+HOW MAUL USES BOTH
+-------------------
+
+1. Load IP list from file
+2. For EACH IP, Maul runs BOTH methods simultaneously:
+
+   Thread 1: PTR lookup
+     - Query DNS for PTR record
+     - Save domain if found
+
+   Thread 2: SSL scan
+     - Connect to IP:443
+     - Read certificate
+     - Extract all domains
+     - Save each domain found
+
+3. Combine all results (removes duplicates automatically)
+4. Save complete domain list to file
+
+
+THE WORKFLOW
+------------
+
+Step 1: You give Maul IPs
+  Input: ips.txt containing 100 IPs
+
+Step 2: Maul runs PTR + SSL on each IP
+  PTR finds:  30 domains
+  SSL finds:  250 domains (many IPs have multiple domains in certs)
+  Overlap:    10 domains found by both methods
+
+Step 3: Maul saves unique domains
+  Total Unique Domains: 270
+
+Step 4: Use domains for next step
+  Feed 270 domains to subdomain scanner
+  Or use with other tools (ffuf, subfinder, etc.)
+
+
+WHICH METHOD FINDS MORE?
+-------------------------
+
+Usually SSL finds WAY more domains because:
+  - One certificate can have 50+ domains
+  - Wildcards reveal entire organizations
+  - Shared hosting puts many sites on one IP
+  - Most modern infrastructure uses HTTPS
+
+PTR is important for:
+  - Traditional hosting/dedicated servers
+  - Finding official hostnames
+  - Corporate infrastructure
+  - Internal network discovery
+
+
+SUMMARY
+-------
+
+PTR:
+  + Fast DNS query
+  + Finds official hostname
+  + Works on any IP
+  - Often no PTR record set
+  - Usually only 1 domain
+
+SSL:
+  + Finds MANY domains per IP
+  + Reveals infrastructure
+  + Works on cloud IPs
+  - Only works if port 443 open
+  - Requires HTTPS
+
+TOGETHER:
+  ✅ Maximum domain discovery
+  ✅ Cover each other's weaknesses
+  ✅ Complete picture of infrastructure

@@ -1,0 +1,64 @@
+PTR RECORD LOOKUP - HOW IT WORKS IN MAUL
+==========================================
+
+WHAT IS PTR?
+------------
+PTR (Pointer Record) is a DNS record that maps an IP address to a domain name.
+It's the reverse of normal DNS lookups.
+
+Normal DNS:  google.com → 142.250.185.46
+PTR/Reverse: 142.250.185.46 → google.com
+
+
+HOW MAUL USES IT
+-----------------
+1. You give Maul a list of IP addresses
+2. For each IP, Maul does a reverse DNS lookup
+3. DNS server returns what domain owns that IP
+4. Maul saves all found domains
+
+
+STEP-BY-STEP PROCESS
+---------------------
+Input IP: 8.8.8.8
+
+Step 1: Reverse the IP address
+   8.8.8.8 becomes 8.8.8.8.in-addr.arpa
+
+Step 2: Query DNS for PTR record
+   Ask: "What domain owns 8.8.8.8.in-addr.arpa?"
+
+Step 3: DNS responds
+   Answer: "dns.google"
+
+Step 4: Save domain
+   Maul stores "dns.google" in found_doms list
+
+
+CODE FLOW
+---------
+1. Load IP list from file
+2. Thread pool creates multiple workers
+3. Each worker:
+   - Takes an IP
+   - Calls dns.resolver.resolve(reversed_ip, 'PTR')
+   - Gets domain name back
+   - Prints "[*] PTR: domain.com"
+   - Adds to Variables.found_doms
+4. When done, save all domains to file
+
+
+LIMITATIONS
+-----------
+- Only works if IP owner configured PTR records
+- Many cloud providers (AWS, Azure, GCP) don't set PTR records
+- Some IPs have no PTR record at all
+- More common on traditional hosting/dedicated servers
+
+
+WHY USE IT?
+-----------
+- Fast - just a DNS query
+- Finds official domain associated with IP
+- Works without connecting to the server
+- Good for bulk IP enumeration

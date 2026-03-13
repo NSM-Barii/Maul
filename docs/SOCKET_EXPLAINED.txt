@@ -1,0 +1,113 @@
+SOCKET REVERSE LOOKUP - HOW IT WORKS IN MAUL
+=============================================
+
+WHAT IS SOCKET.GETHOSTBYADDR()?
+--------------------------------
+socket.gethostbyaddr() is a Python function that asks your operating system
+to do a reverse lookup on an IP address. It returns the hostname associated
+with that IP.
+
+
+HOW MAUL USES IT
+-----------------
+1. You give Maul a list of IP addresses
+2. For each IP, Maul calls socket.gethostbyaddr(ip)
+3. Your OS checks multiple sources to find the hostname
+4. Returns the domain/hostname for that IP
+5. Maul saves all found domains
+
+
+STEP-BY-STEP PROCESS
+---------------------
+Input IP: 142.250.185.46
+
+Step 1: Call socket.gethostbyaddr('142.250.185.46')
+
+Step 2: OS checks multiple sources:
+   - Local /etc/hosts file
+   - DNS cache (previously looked up domains)
+   - System DNS resolver
+   - Does PTR lookup behind the scenes
+
+Step 3: OS returns hostname
+   Answer: "lga34s32-in-f14.1e100.net"
+
+Step 4: Save domain
+   Maul stores the hostname in found_doms list
+
+
+WHAT THE OS CHECKS
+------------------
+1. /etc/hosts file
+   - Local file with IP-to-hostname mappings
+   - Example: "127.0.0.1 localhost"
+
+2. DNS Cache
+   - Previously resolved IPs stored in memory
+   - Faster than querying DNS again
+
+3. System Resolver
+   - Uses your configured DNS server
+   - Performs PTR lookup (same as PTR method)
+
+
+CODE FLOW
+---------
+1. Load IP list from file
+2. Thread pool creates multiple workers
+3. Each worker:
+   - Takes an IP
+   - Calls socket.gethostbyaddr(ip)
+   - OS does the reverse lookup
+   - Returns: (hostname, aliaslist, ipaddrlist)
+   - Extract hostname from result[0]
+   - Prints "[*] Socket: domain.com"
+   - Adds to Variables.found_doms
+4. When done, save all domains to file
+
+
+SOCKET vs PTR - WHAT'S THE DIFFERENCE?
+---------------------------------------
+Socket Method:
+  - Uses OS-level resolver
+  - Checks local files + cache + DNS
+  - Might be faster (uses cache)
+  - Less control over timeout/DNS server
+
+PTR Method:
+  - Direct DNS query for PTR record
+  - Only checks DNS server
+  - You control which DNS server to use
+  - You set explicit timeout values
+
+
+WHICH ONE IS BETTER?
+--------------------
+They often return the SAME result because socket uses PTR behind the scenes.
+
+Use Socket when:
+  - You want system-level resolution
+  - You want to use OS cache
+  - You trust your system's DNS config
+
+Use PTR when:
+  - You want explicit DNS control
+  - You want to specify DNS server
+  - You want custom timeout values
+
+
+LIMITATIONS
+-----------
+- Only as good as your system's DNS configuration
+- Relies on PTR records being set up
+- Some IPs have no reverse DNS entry
+- Might return internal hostname instead of public domain
+
+
+WHY USE IT?
+-----------
+- Fast (uses OS cache)
+- Simple one-line call
+- Works with system DNS settings
+- Good for quick reverse lookups
+- Can find local/internal hostnames

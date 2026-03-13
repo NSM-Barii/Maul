@@ -1,0 +1,112 @@
+SSL CERTIFICATE EXTRACTION - HOW IT WORKS IN MAUL
+==================================================
+
+WHAT IS SSL CERTIFICATE SCANNING?
+----------------------------------
+When you connect to a website with HTTPS, the server sends an SSL certificate.
+This certificate contains a list of ALL domain names it's valid for.
+Maul connects to IPs on port 443 and reads these certificates to find domains.
+
+
+HOW MAUL USES IT
+-----------------
+1. You give Maul a list of IP addresses
+2. For each IP, Maul connects to port 443 (HTTPS)
+3. Server sends its SSL certificate
+4. Maul extracts ALL domains from the certificate
+5. Maul saves all found domains
+
+
+STEP-BY-STEP PROCESS
+---------------------
+Input IP: 140.82.121.4 (GitHub)
+
+Step 1: Connect to IP on port 443
+   Open TCP connection to 140.82.121.4:443
+
+Step 2: Initiate SSL handshake
+   Start HTTPS connection (ignore certificate errors)
+
+Step 3: Server sends SSL certificate
+   GitHub's server sends its certificate
+
+Step 4: Extract domains from certificate
+   Parse certificate to find:
+   - CN (Common Name): github.com
+   - SANs (Subject Alternative Names):
+     * www.github.com
+     * api.github.com
+     * *.github.com
+     * gist.github.com
+
+Step 5: Save all domains
+   Maul stores all domains in found_doms list
+
+
+CERTIFICATE FIELDS EXPLAINED
+-----------------------------
+CN (Common Name):
+   - Main domain the certificate is for
+   - Example: "github.com"
+
+SAN (Subject Alternative Name):
+   - Additional domains on the same certificate
+   - Can have 1 to 100+ domains
+   - Wildcards like "*.company.com" show subdomains
+   - Example: "www.github.com, api.github.com"
+
+
+CODE FLOW
+---------
+1. Load IP list from file
+2. Thread pool creates multiple workers
+3. Each worker:
+   - Takes an IP
+   - Opens socket to IP:443
+   - Wraps socket with SSL
+   - Gets certificate in binary format
+   - Parses certificate with OpenSSL library
+   - Extracts CN from subject
+   - Loops through extensions to find SANs
+   - For each domain found:
+     * Prints "[*] SSL: domain.com"
+     * Adds to Variables.found_doms
+4. When done, save all domains to file
+
+
+WHY THIS IS POWERFUL
+--------------------
+One IP can reveal MANY domains:
+- Shared hosting: 50+ sites on one IP
+- Company infrastructure: all their services
+- CDN nodes: multiple customer domains
+- Wildcard certs show organization ownership
+
+Example:
+  IP: 1.2.3.4
+  Certificate contains:
+    - company.com
+    - www.company.com
+    - api.company.com
+    - staging.company.com
+    - dev.company.com
+    - *.company.com (wildcard!)
+
+  Result: 6+ domains from ONE IP
+
+
+LIMITATIONS
+-----------
+- Only works if IP runs HTTPS (port 443 open)
+- Connection might timeout (firewall/network)
+- Some servers reject connections from scanners
+- Certificate might only have one domain
+
+
+WHY USE IT?
+-----------
+- Finds domains NOT in DNS
+- Reveals infrastructure layout
+- Discovers internal/staging subdomains
+- Works on cloud IPs where PTR fails
+- One IP can give you dozens of domains

@@ -94,6 +94,10 @@ class Reverse_IP_Domain():
                 Variables.found_doms.append(domain)
                 cls.scan_socket += 1
 
+                # Update panel text
+                c5 = "yellow"
+                Variables.panel_text = (f"Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+
 
         except Exception as e: 
             if verbose: console.print(f"[{c6}][-] Socket Exception Error:[{c2}] {e}")
@@ -159,11 +163,14 @@ class Reverse_IP_Domain():
             # Print and store all found domains
             if domains:
                 with Variables.LOCK:
+                    cls.scan_ssl += 1
                     for domain in domains:
                         console.print(f"[{c1}][*] SSL:[{c2}] {domain}")
-                        cls.scan_ssl += 1
                         if domain not in Variables.found_doms:
                             Variables.found_doms.append(domain)
+
+                    # Update panel text
+                    Variables.panel_text = (f"Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
 
 
@@ -204,12 +211,15 @@ class Reverse_IP_Domain():
             answers = resolver.resolve(rev_ip, 'PTR')
 
             with Variables.LOCK:
+                cls.scan_ptr += 1
                 for rdata in answers:
                     domain = str(rdata).rstrip('.')
                     console.print(f"[{c1}][*] PTR:[{c2}] {domain}")
-                    cls.scan_ptr += 1
                     if domain not in Variables.found_doms:
                         Variables.found_doms.append(domain)
+
+                # Update panel text
+                Variables.panel_text = (f"Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
 
         except dns.resolver.NXDOMAIN:
@@ -238,9 +248,6 @@ class Reverse_IP_Domain():
 
         max_threads = int(max_threads)
         futures = []
-        Variables.panel_text = (f"Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
-
-
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
 
