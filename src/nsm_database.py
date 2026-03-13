@@ -77,7 +77,7 @@ class File_Saver():
 
                 with open(pathway, "w") as file:
                     
-                    ahh = ''.join(d for d in data)
+                    ahh = '\n'.join(d for d in data)
                     file.write(ahh)
 
                 console.print(f"[bold green][+] Data Successfully pushed:[/bold green] {pathway}")
