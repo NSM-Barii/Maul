@@ -65,7 +65,7 @@ class Run():
             #if Variables.found_subs: Directory_Scanner.main()
 
             # NEW ASYNC SCANNERS
-            if Variables.url or Variables.domains or Variables.found_doms:
+            if Variables.url or Variables.domains:
                 from nsm_subdomain_scanner import Subdomain_Scanner
                 wordlist = Subdomain_Scanner._sub_sanitzer(wordlist=Variables.wordlist_sub)
                 asyncio.run(Async_Subdomain_Scanner.run(url=Variables.url, domains=Variables.domains if Variables.domains else Variables.found_doms, wordlist=wordlist))
@@ -75,4 +75,4 @@ class Run():
                 wordlist = Directory_Scanner._dir_sanitzer(wordlist=Variables.wordlist_dir)
                 asyncio.run(Async_Directory_Scanner.run(subdomains=Variables.found_subs, wordlist=wordlist))
 
-            if Variables.save: File_Saver.push_scan_results(data=Variables.found_subs)
+            if Variables.save and Variables.found_subs: File_Saver.push_scan_results(data=Variables.found_subs)

@@ -35,6 +35,10 @@ class Reverse_IP_Domain():
     scan_ssl    = 0
     scan_ptr    = 0
 
+    scan = 0
+    total = 0
+
+
 
 
     @classmethod
@@ -93,10 +97,6 @@ class Reverse_IP_Domain():
                 console.print(f"[{c1}][*] Socket:[{c2}] {domain}")
                 Variables.found_doms.append(domain)
                 cls.scan_socket += 1
-
-                # Update panel text
-                c5 = "yellow"
-                Variables.panel_text = (f"Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
 
         except Exception as e: 
@@ -169,9 +169,7 @@ class Reverse_IP_Domain():
                         if domain not in Variables.found_doms:
                             Variables.found_doms.append(domain)
 
-                    # Update panel text
-                    Variables.panel_text = (f"Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
-
+                    Variables.panel_text = (f"IP:[{c5}] {cls.scan}/{cls.total}[/{c5}]  -  Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
 
 
@@ -201,6 +199,8 @@ class Reverse_IP_Domain():
 
         try:
 
+            cls.scan += 1
+
             # Reverse DNS lookup using PTR records
             resolver = dns.resolver.Resolver()
             resolver.timeout = 3
@@ -218,9 +218,7 @@ class Reverse_IP_Domain():
                     if domain not in Variables.found_doms:
                         Variables.found_doms.append(domain)
 
-                # Update panel text
-                Variables.panel_text = (f"Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
-
+                Variables.panel_text = (f"IP:[{c5}] {cls.scan}/{cls.total}[/{c5}]  -  Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
         except dns.resolver.NXDOMAIN:
             if verbose: console.print(f"[{c6}][-] PTR: No PTR record for {ip}")
@@ -248,6 +246,7 @@ class Reverse_IP_Domain():
 
         max_threads = int(max_threads)
         futures = []
+        cls.total = len(ips)
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
 
@@ -260,11 +259,12 @@ class Reverse_IP_Domain():
                     futures.append(executor.submit(Reverse_IP_Domain._pull_domains_ptr, ip))
 
                     #Variables.panel_text = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
-                    Variables.panel_text = (f"Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                    Variables.panel_text = (f"IP:[{c5}] {cls.scan}/{cls.total}[/{c5}]  -  Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
 
 
-
+               
             except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}");  Variables.errors +=1
+            
 
 
 
@@ -289,6 +289,7 @@ class Reverse_IP_Domain():
         c5 = "yellow"
 
         cleaned = set()
+        Variables.panel_text = (f"[{c5}] Cleaning and Saving Results!")
 
         for domain in domains:
             domain = domain.strip()
@@ -324,9 +325,10 @@ class Reverse_IP_Domain():
             if domain.count('.') == 3 and all(part.isdigit() for part in domain.split('.')):
                 continue
 
-            cleaned.add(domain.lower())
+            cleaned.add(domain.lower()) 
+        
 
-        console.print(f"[{c1}][+] Cleaned domains:[{c5}] {len(domains)} → {len(cleaned)}")
+
         return sorted(cleaned)
 
     @classmethod
@@ -344,13 +346,19 @@ class Reverse_IP_Domain():
         console.print(f"[bold red]\n{p}  IP Enumeration  {p}\n")
         Reverse_IP_Domain._threader(max_threads=max_threads, ips=ips)
 
-        # Save raw results
+ 
         File_Saver.push_scan_results(data=Variables.found_doms, reverse=True)
 
-        # Save cleaned results for tool usage
-        cleaned_domains = cls._clean_domains(Variables.found_doms)
-        File_Saver.push_scan_results(data=cleaned_domains, reverse=True, cleaned=True)
+        cleaned_domains = Reverse_IP_Domain._clean_domains(Variables.found_doms)
+        File_Saver.push_scan_results(data=cleaned_domains, reverse=True)
 
+        
+        c1 = "bold green"
+        console.print(
+            f"\n[{c1}][+] IP Addresses:[{c1}] {len(ips)}"
+            f"\n\n[{c1}][+] Cleaned domains:[bold yellow] {len(Variables.found_doms)} → {len(cleaned_domains)}"
+            f"\n[{c1}][+] Domains <-- IPs:[bold yellow] {len(cleaned_domains)}\n"
+        )
 
 
 
