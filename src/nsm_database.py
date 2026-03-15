@@ -101,7 +101,15 @@ class File_Saver():
 
             timestamp = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
-            if Variables.url:  
+
+
+            if Variables.save_name:
+
+                cls.path         = cls.path_dir / f"{Variables.save_name}" 
+                cls.path_reverse = cls.path_dir / f"{Variables.save_name}" 
+
+            elif Variables.url:  
+
                 cls.path = cls.path_dir / f"{Variables.url.replace(".", "_")}_{timestamp}.txt" 
                 cls.path_reverse = cls.path_dir / f"reverse_domains_{timestamp}.txt" 
 

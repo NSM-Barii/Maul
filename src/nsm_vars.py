@@ -27,6 +27,7 @@ class Variables():
     max_threads = 250
     timeout     = 1
     save        = False
+    save_name   = False
     LOCK        = threading.Lock()
     
     found_doms = []
