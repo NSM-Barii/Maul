@@ -1,171 +1,122 @@
-# THIS WILL LAUCNH THE MAIN CODE RUNNING FROM ALL OTHER MODULES
-# THIS PROGRAM IS THE BROTHER PROGRAM OF "Vader" AND IS MEANT TO BE USED ALONGSIDE IT (Optional)
+import argparse
+import sys
 
-
-# UI IMPORTS
 from rich.console import Console
-from rich.panel import Panel
-import pyfiglet
 
-
-# NSM IMPORTS
 from run import Run
 from nsm_vars import Variables
 
-
-# ETC IMPORTS
-import argparse, time
-
-
-# CONSTANTS
 console = Console()
 
+WORDLIST_MAP = {
+    "1": "tiny.txt",
+    "2": "small.txt",
+    "3": "medium.txt",
+    "4": "large.txt",
+}
+
+DEFAULT_STATUS_CODES = [200, 204, 301, 302, 303, 304]
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Deep infrastructure scanning and enumeration framework"
+    )
 
-# LETS GET SOMETHING STRAIGHT
-"""
+    # Input options
+    parser.add_argument("-i", help="Input file containing list of IPs")
+    parser.add_argument("-u", help="Single URL target for scanning")
+    parser.add_argument("-d", help="Input file containing list of domains")
+    parser.add_argument("-t", type=int, default=250, help="Maximum threads (default: 250)")
 
-AMERICA FIRST
-AMERICA ONLY
-AMERICA ALWAYS
-
-"""
-# PRO USA
-# PRO WESTERN 
-
-
-
-
-class Main():
-    """This will launch program wide logic""" 
-
-
-
-    # COLORS
-
-    c1 = "bold green"
-    c2 = "bold yellow"
-    c4 = "bold blue"
-    c5 = "yellow"
-    c6 = "green"
-    c7 = "bold red"
-
-
-
-
-    parser = argparse.ArgumentParser(description="Deep infrastructure scanning and enumeration framework")
-
-
-    # INPUT OPTIONS
-    parser.add_argument("-i",             help="Input file containing list of IPs")
-    parser.add_argument("-u",             help="Single URL target for scanning")
-    parser.add_argument("-d",             help="Input file containing list of domains")
-    parser.add_argument("-t",             help="Maximum threads (default: 250)")
-
-    # SCAN TYPES
-    parser.add_argument("--rdns",  action="store_true", help="Perform reverse DNS lookup on IPs")
+    # Scan types
+    parser.add_argument("--rdns", action="store_true", help="Perform reverse DNS lookup on IPs")
     parser.add_argument("--ports", action="store_true", help="Perform port scanning on IPs")
-    parser.add_argument("--subs",  action="store_true", help="Perform subdomain enumeration")
-    parser.add_argument("--dirs",  action="store_true", help="Perform directory/file bruteforce")
-    parser.add_argument("--all",   action="store_true", help="Run all available scan types")
+    parser.add_argument("--subs", action="store_true", help="Perform subdomain enumeration")
+    parser.add_argument("--dirs", action="store_true", help="Perform directory/file bruteforce")
+    parser.add_argument("--all", action="store_true", help="Run all available scan types")
 
-    # SCAN CONFIG
-    parser.add_argument("--status-codes",       help="Comma-separated HTTP status codes to filter (default: 200,204,301,302,303,304)")
-    parser.add_argument("--sub-wordlist",
-                        choices=["1","2","3","4","tiny.txt", "small.txt", "medium.txt", "large.txt"],
-                        help="Subdomain wordlist: 1=tiny, 2=small, 3=medium, 4=large (default: 2)")
-    parser.add_argument("--dir-wordlist",
-                        choices=["1","2","3","4","tiny.txt", "small.txt", "medium.txt", "large.txt"],
-                        help="Directory wordlist: 1=tiny, 2=small, 3=medium, 4=large (default: 2)")
-    parser.add_argument("--mutations",    help="Custom mutations wordlist for subdomain permutations")
+    # Scan config
+    parser.add_argument("--status-codes", help="Comma-separated HTTP status codes to filter")
+    parser.add_argument(
+        "--sub-wordlist",
+        choices=["1", "2", "3", "4"],
+        default="2",
+        help="Subdomain wordlist: 1=tiny, 2=small, 3=medium, 4=large (default: 2)",
+    )
+    parser.add_argument(
+        "--dir-wordlist",
+        choices=["1", "2", "3", "4"],
+        default="2",
+        help="Directory wordlist: 1=tiny, 2=small, 3=medium, 4=large (default: 2)",
+    )
+    parser.add_argument("--mutations", help="Custom mutations wordlist for subdomain permutations")
 
-    # OUTPUT
-    parser.add_argument("--timeout", help="Request timeout in seconds (default: 5)")
-    parser.add_argument("--save",    action="store_true", help="Save scan results to file")
-    parser.add_argument("--x",       help="Custom output filename")
+    # Output
+    parser.add_argument("--timeout", type=int, default=5, help="Request timeout in seconds (default: 5)")
+    parser.add_argument("--save", action="store_true", help="Save scan results to file")
+    parser.add_argument("--x", help="Custom output filename")
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit()
+
+    return parser.parse_args()
 
 
+def resolve_status_codes(raw):
+    if not raw:
+        return DEFAULT_STATUS_CODES
+    return [int(code.strip()) for code in raw.split(",")]
 
-    args = parser.parse_args()
 
+def main():
+    args = parse_args()
 
-    Variables.ips          = args.i            or False
-    Variables.url          = args.u            or False
-    Variables.domains      = args.d            or False
-    Variables.max_threads  = args.t            or 250
-
-    Variables.scan_rdns    = args.rdns         or False
-    Variables.scan_ports   = args.ports        or False
-    Variables.scan_sub     = args.subs         or False
-    Variables.scan_dir     = args.dirs         or False
+    Variables.ips = args.i
+    Variables.url = args.u
+    Variables.domains = args.d
+    Variables.max_threads = args.t
 
     if args.all:
-        Variables.scan_rdns = Variables.scan_ports = Variables.scan_sub = Variables.scan_dir = True
+        Variables.scan_rdns = True
+        Variables.scan_ports = True
+        Variables.scan_sub = True
+        Variables.scan_dir = True
+    else:
+        Variables.scan_rdns = args.rdns
+        Variables.scan_ports = args.ports
+        Variables.scan_sub = args.subs
+        Variables.scan_dir = args.dirs
 
-    Variables.status_codes = args.status_codes or False
-    Variables.wordlist_sub = args.sub_wordlist or "2"
-    Variables.wordlist_dir = args.dir_wordlist or "2"
+    Variables.status_codes = resolve_status_codes(args.status_codes)
+    Variables.wordlist_sub = args.sub_wordlist
+    Variables.wordlist_dir = args.dir_wordlist
+    Variables.s_name = WORDLIST_MAP[args.sub_wordlist]
+    Variables.d_name = WORDLIST_MAP[args.dir_wordlist]
+    Variables.mutations = args.mutations
+    Variables.timeout = args.timeout
+    Variables.save = args.save
+    Variables.save_name = args.x
 
-    Variables.timeout      = args.timeout      or 5
-    Variables.save         = args.save         or False
-    Variables.save_name    = args.x            or False
-    
+    c1 = "bold green"
+    c4 = "bold blue"
 
-
-    if Variables.wordlist_sub=="1":   Variables.s_name="tiny.txt"
-    elif Variables.wordlist_sub=="2": Variables.s_name="small.txt"
-    elif Variables.wordlist_sub=="3": Variables.s_name="medium.txt"
-    elif Variables.wordlist_sub=="4": Variables.s_name="large.txt"
-    else: Variables.s_name=False
-
-    if Variables.wordlist_dir=="1":   Variables.d_name="tiny.txt"
-    elif Variables.wordlist_dir=="2": Variables.d_name="small.txt"
-    elif Variables.wordlist_dir=="3": Variables.d_name="medium.txt"
-    elif Variables.wordlist_dir=="4": Variables.d_name="large.txt"
-    else: Variables.d_name=False
-
-
-
-
-    try: Variables.max_threads = int(Variables.max_threads)
-    except Exception: Variables.max_threads = 250
-
-
-    if args.status_codes:
-        codes = []
-        for c in args.status_codes.split(','): codes.append(int(c))
-        Variables.status_codes = codes  
-    else: Variables.status_codes = [200,204,301,302,303,304]
-
-
-     
-    stats = (
-        f"[{c1}][+] Url:[{c4}] {Variables.url}"
-        f"\n[{c1}] [+] Domains:[{c4}] {Variables.domains}"
-        f"\n[{c1}] [+] Max_Threads:[{c4}] {Variables.max_threads}"
-        f"\n[{c1}] [+] Sub-Wordlist:[{c4}] {Variables.s_name}"
-        f"\n[{c1}] [+] Dir-Wordlist:[{c4}] {Variables.d_name}"
-        f"\n[{c1}] [+] Mutations:[{c4}] {Variables.mutations}"
-        f"\n[{c1}] [+] Status_Codes:[{c4}] {Variables.status_codes}"
-        f"\n[{c1}] [+] Timeout:[{c4}] {Variables.timeout}"
-        f"\n[{c1}] [+] File_Saving:[{c4}] {Variables.save}"
-
-    )
-
-    panel  = Panel(renderable= stats,        
-        title="Constants",
-        border_style="purple",
-        style="bold red",
-        expand=False 
-    )
-    
     console.print(
         f"\n[{c1}]=========   CONSTANTS   =========\n",
-        stats,
+        f"[{c1}][+] Url:[{c4}] {args.u}"
+        f"\n[{c1}] [+] Domains:[{c4}] {args.d}"
+        f"\n[{c1}] [+] Max_Threads:[{c4}] {args.t}"
+        f"\n[{c1}] [+] Sub-Wordlist:[{c4}] {Variables.s_name}"
+        f"\n[{c1}] [+] Dir-Wordlist:[{c4}] {Variables.d_name}"
+        f"\n[{c1}] [+] Mutations:[{c4}] {args.mutations}"
+        f"\n[{c1}] [+] Status_Codes:[{c4}] {Variables.status_codes}"
+        f"\n[{c1}] [+] Timeout:[{c4}] {args.timeout}"
+        f"\n[{c1}] [+] File_Saving:[{c4}] {args.save}",
         f"\n[{c1}]=================================",
     )
 
-    #time.sleep(5); print("")
-    
     Run.runner()
+
+
+main()
