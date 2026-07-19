@@ -16,6 +16,7 @@ class Variables():
     scan_rdns  = False
     scan_ports = False
     scan_sub   = False
+    scan_live  = False
     scan_dir   = False
     scan_sd    = False
  
@@ -35,13 +36,17 @@ class Variables():
 
     max_threads = 250
     timeout     = 1
+    delay       = 0
     save        = False
     save_name   = False
-    LOCK        = threading.Lock()
+    save_path   = False
+    LOCK        = threading.RLock()
     
-    found_doms = []
-    found_subs = []
-    found_dirs = []
+    found_doms     = []
+    found_subs     = []
+    found_live     = []
+    found_priority = []
+    found_dirs     = []
 
     
     console = Console()
@@ -57,4 +62,11 @@ class Variables():
     completed_dir = 0
     # COLLECT ALL ERRORS
     errors = 0
+
+
+
+    @classmethod
+    def add_error(cls):
+        """Thread-safe error bump // increment under the lock so the count isnt a race"""
+        with cls.LOCK: cls.errors += 1
 

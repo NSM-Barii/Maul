@@ -67,22 +67,23 @@ class Main():
     parser.add_argument("--rdns",  action="store_true", help="Perform reverse DNS lookup on IPs")
     parser.add_argument("--ports", action="store_true", help="Perform port scanning on IPs")
     parser.add_argument("--subs",  action="store_true", help="Perform subdomain enumeration")
+    parser.add_argument("--live",  action="store_true", help="Check which subs/domains are alive and split out priority (keyword) hits")
     parser.add_argument("--dirs",  action="store_true", help="Perform directory/file bruteforce")
     parser.add_argument("--all",   action="store_true", help="Run all available scan types")
 
     # SCAN CONFIG
     parser.add_argument("--status-codes",       help="Comma-separated HTTP status codes to filter (default: 200,204,301,302,303,304)")
     parser.add_argument("--sub-wordlist",
-                        choices=["1","2","3","4","tiny.txt", "small.txt", "medium.txt", "large.txt"],
-                        help="Subdomain wordlist: 1=tiny, 2=small, 3=medium, 4=large (default: 2)")
+                        help="Subdomain wordlist: 1=tiny, 2=small, 3=medium, 4=large, or a custom filename in database/subdomains/ (default: 2)")
     parser.add_argument("--dir-wordlist",
-                        choices=["1","2","3","4","tiny.txt", "small.txt", "medium.txt", "large.txt"],
-                        help="Directory wordlist: 1=tiny, 2=small, 3=medium, 4=large (default: 2)")
+                        help="Directory wordlist: 1=tiny, 2=small, 3=medium, 4=large, or a custom filename in database/directories/ (default: 2)")
     parser.add_argument("--mutations",    help="Custom mutations wordlist for subdomain permutations")
 
     # OUTPUT
     parser.add_argument("--timeout", help="Request timeout in seconds (default: 5)")
+    parser.add_argument("--delay",   help="Seconds to sleep between requests per thread // be a good neighbor / avoid hammering (default: 0)")
     parser.add_argument("--save",    action="store_true", help="Save scan results to file")
+    parser.add_argument("--save-path", help="This will be used to save files in a custom path inside the database/saved_scans/{your_path}/{your_scan_results}")
     parser.add_argument("--x",       help="Custom output filename")
 
 
@@ -98,18 +99,21 @@ class Main():
     Variables.scan_rdns    = args.rdns         or False
     Variables.scan_ports   = args.ports        or False
     Variables.scan_sub     = args.subs         or False
+    Variables.scan_live    = args.live         or False
     Variables.scan_dir     = args.dirs         or False
 
     if args.all:
-        Variables.scan_rdns = Variables.scan_ports = Variables.scan_sub = Variables.scan_dir = True
+        Variables.scan_rdns = Variables.scan_ports = Variables.scan_sub = Variables.scan_live = Variables.scan_dir = True
 
     Variables.status_codes = args.status_codes or False
     Variables.wordlist_sub = args.sub_wordlist or "2"
     Variables.wordlist_dir = args.dir_wordlist or "2"
 
     Variables.timeout      = args.timeout      or 5
+    Variables.delay        = args.delay        or 0
     Variables.save         = args.save         or False
     Variables.save_name    = args.x            or False
+    Variables.save_path    = args.save_path    or False
     
 
 

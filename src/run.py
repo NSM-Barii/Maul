@@ -16,6 +16,7 @@ from nsm_vars import Variables
 from nsm_reverser import Reverse_IP_Domain
 from nsm_port_scanner import Socket_Port_Scanner
 from nsm_subdomain_scanner import Subdomain_Scanner
+from nsm_liveness_scanner import Liveness_Scanner
 from nsm_directory_scanner import Directory_Scanner
 from nsm_database import File_Saver
 
@@ -94,6 +95,10 @@ class Run():
             if Variables.ips and Variables.scan_ports: Socket_Port_Scanner.main()
 
             if Variables.scan_sub: Subdomain_Scanner.main()
+            if Variables.scan_live: Liveness_Scanner.main()
             if Variables.scan_dir: Directory_Scanner.main()
 
-            if Variables.save: File_Saver.push_scan_results(data=Variables.found_subs)
+            if Variables.save and Variables.found_subs: File_Saver.push_scan_results(data=Variables.found_subs, label="subs")
+            if Variables.save and Variables.found_live: File_Saver.push_scan_results(data=Variables.found_live, label="live")
+            if Variables.save and Variables.found_priority: File_Saver.push_scan_results(data=Variables.found_priority, label="priority")
+            if Variables.save and Variables.found_dirs: File_Saver.push_scan_results(data=Variables.found_dirs, label="dirs")

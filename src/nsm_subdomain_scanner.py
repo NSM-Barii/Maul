@@ -19,6 +19,7 @@ from collections import deque
 
 # NSM IMPORTS
 from nsm_vars import Variables
+from nsm_database import File_Saver
 
 
 
@@ -116,46 +117,15 @@ class Subdomain_Scanner():
             return valid_wordlist
                 
 
-        except FileNotFoundError as e: CONSOLE.print(f"[{c6}][-] File Not Found Error:[{c2}] {e}"); Variables.errors += 1; return
+        except FileNotFoundError as e: CONSOLE.print(f"[{c6}][-] File Not Found Error:[{c2}] {e}"); Variables.add_error(); return
 
-        except Exception as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
+        except Exception as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.add_error(); sys.exit()
     
 
     @staticmethod
     def _domain_sanitzer(domains, CONSOLE=console, verbose=True) -> list:
-        """This will sanitize domain wordlist given by user --> coming from Vader --> Maul"""
-
-
-        c1 = "bold green"
-        c2 = "bold yellow"
-        c4 = "bold blue"
-        c5 = "yellow"
-        c6 = "bold red"
-
-
-        valid_domains = []
-
-
-        try:
-
-            path = Path() / str(domains)
-            if not path.exists(): CONSOLE.print(f"[{c6}][-] Invalid domain wordlist given, please check README.md for help!"); sys.exit()
-
-            with open(str(path), "r") as file:
-
-                for word in file:
-                    text = word.strip().split("\n"); text = '\n'.join(text)
-                    valid_domains.append(text)
-
-
-            if verbose: CONSOLE.print(f"[{c1}][+] Successfully validated domain wordlist: {path}")
-            return valid_domains
-            
-        
-
-        except FileNotFoundError as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
-
-        except Exception as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
+        """Now just delegates to the shared File_Saver.domain_sanitizer // logic lives in one place so its not copy-pasted across scanners"""
+        return File_Saver.domain_sanitizer(domains=domains, verbose=verbose)
     
 
     @classmethod
@@ -179,6 +149,7 @@ class Subdomain_Scanner():
 
             subdomain = (f"{sub}.{domain}")#; cls.current_sub = subdomain
             Variables.panel_text = f"Target:[{c5}] {sub}.*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
+            if Variables.delay: time.sleep(float(Variables.delay))
             rdata = resolver.resolve(subdomain, "A")
 
             if rdata:
@@ -192,7 +163,7 @@ class Subdomain_Scanner():
 
         except Exception as e: 
             if verbose: CONSOLE.print(f"[{c7}][-] Exception Error:[{c2}] {e}")
-            Variables.errors += 1; return False
+            Variables.add_error(); return False
         
     
     
@@ -241,13 +212,13 @@ class Subdomain_Scanner():
 
             except KeyboardInterrupt as e:
                 if verbose: CONSOLE.print(f"[{c6}][-] Exception Error:[{c5}] {e}")
-                Variables.errors += 1
+                Variables.add_error()
                 cls.scan = False
                 exit()
 
             except Exception as e:
                 if verbose: CONSOLE.print(f"[{c6}][-] Exception Error:[{c5}] {e}")
-                Variables.errors += 1
+                Variables.add_error()
                 cls.scan = False
                 exit()
 

@@ -46,6 +46,26 @@ large:  https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discove
 
 
 
+# WHAT I RAN
+"""
+
+subfinder -df domain.txt -o subdomains.txt
+httpx -l subdomains.txt -title -tech-detect -status-code -u -o live_host.txt
+grep -iE "(admin|login|portal|api|panel|vpn|mail|dashboard|auth|cpanel|webmail)" live_host.txt > priorities.txt
+sudo venv/bin/python -d ../database/iran_analysis/top/priorities.txt --dirs --dir-wordlist 4 -t 750 --save --x sub_directories.txt
+httpx -l juicy_finds.txt -title -status-code -server -tech-detect -cdn -mc 200,301,302 -o juicy_finds_live.txt
+theHarvester -d khamenei.ir -b all -f emails_khamenei.json
+theHarvester -d petroleumbs.ir -b all -f emails_petroleumbs.json
+theHarvester -d vahdat.ac.ir -b all -f emails_vahdat.json
+"""
+
+
+
+# SEPERATE IRAN DIR
+"""
+subfinder -dL domains.txt -all -recursive -timeout 30 -o subdomains_full.txt
+
+"""
 
 
 
@@ -56,38 +76,40 @@ class File_Saver():
     """This class will save files"""
 
 
-    path         = False
-    path_reverse = False
+    base_name    = False
     path_dir     = Path(__file__).parent.parent / "database" / "saved_scans"
 
 
 
     @classmethod
-    def push_scan_results(cls, data, f_type="txt", reverse=False, verbose=False):
-        """This will push current set of ips"""
+    def push_scan_results(cls, data, label, f_type="txt", verbose=False):
+        """This will push current set of results to its own labeled file // one file per scan type"""
 
 
         try:
 
             if cls.path_dir.exists():
 
+                if Variables.save_path: 
+                      p = cls.path_dir / Variables.save_path
+                      p.mkdir(parents=True, exist_ok=True)
 
-                if reverse: pathway = cls.path_reverse
-                else: pathway = cls.path
-                
+                      pathway = cls.path_dir / Variables.save_path /  f"{cls.base_name}_{label}.{f_type}"
+                else: 
+                    pathway = cls.path_dir / f"{cls.base_name}_{label}.{f_type}"
 
                 if f_type == "txt":
                     with open(f"{pathway}", "w") as file:
-                        
+
                         ahh = '\n'.join(d for d in data)
                         file.write(ahh)
-                
+
                 elif f_type == "json":
                     with open(f"{pathway}", "w") as file:
                         json.dump(data, file, indent=4)
 
                 console.print(f"[bold green][+] Data Successfully pushed:[/bold green] {pathway}")
-                 
+
 
             else: console.print(f"\n[bold red][-] Your missing the database/saved_scans directory, please check README.md for info you skidd!!!"); sys.exit()
 
@@ -125,37 +147,59 @@ class File_Saver():
 
             if verbose: console.print(f"\n\n[{c1}][+] Successfully sanitized list <-- ips.txt ")
             return valid_ips
- 
+
         except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}"); sys.exit()
-        
+
+
+    @classmethod
+    def domain_sanitizer(cls, domains, verbose=True) -> list:
+        """This will sanitize a domain list file given by user --> coming from Vader --> Maul // shared by sub/live/dir scanners"""
+
+
+        c1 = "bold green"
+        c2 = "bold yellow"
+        c6 = "bold red"
+
+
+        valid_domains = []
+
+
+        try:
+
+            path = Path() / str(domains)
+            if not path.exists(): console.print(f"[{c6}][-] Invalid domain wordlist given, please check README.md for help!"); sys.exit()
+
+            with open(str(path), "r") as file:
+
+                for word in file:
+                    text = word.strip()
+                    if text: valid_domains.append(text)
+
+
+            if verbose: console.print(f"[{c1}][+] Successfully validated domain wordlist: {path}")
+            return valid_domains
+
+
+        except Exception as e: console.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.add_error(); sys.exit()
+
 
     @classmethod
     def make_path(cls):
         """This will be called upon at the beginning fo the program to then make the path stamp"""
 
         
-        if not cls.path:  
+        if not cls.base_name:
 
 
             timestamp = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
 
 
-            if Variables.save_name:
+            if Variables.save_name:   cls.base_name = f"{Variables.save_name}_{timestamp}"
+            elif Variables.url:       cls.base_name = f"{Variables.url.replace(".", "_")}_{timestamp}"
+            else:                     cls.base_name = timestamp
 
-                cls.path         = cls.path_dir / f"{Variables.save_name}" 
-                cls.path_reverse = cls.path_dir / f"{Variables.save_name}" 
-
-            elif Variables.url:  
-
-                cls.path = cls.path_dir / f"{Variables.url.replace(".", "_")}_{timestamp}" 
-                cls.path_reverse = cls.path_dir / f"reverse_domains_{timestamp}" 
-
-            else:              
-                cls.path = cls.path_dir / f"{timestamp}.txt"
-                cls.path_reverse = cls.path_dir / f"reverse_domains_{timestamp}"
-
-            console.print(f"[bold green][*] File Path successfully made:[/bold green] {cls.path}")
+            console.print(f"[bold green][*] File Path successfully made:[/bold green] {cls.path_dir / cls.base_name}_*")
 
 
 

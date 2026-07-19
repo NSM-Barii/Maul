@@ -105,7 +105,7 @@ class Reverse_IP_Domain():
 
         except Exception as e: 
             if verbose: console.print(f"[{c6}][-] Socket Exception Error:[{c2}] {e}")
-            Variables.errors +=1
+            Variables.add_error()
     
 
     @classmethod
@@ -171,13 +171,13 @@ class Reverse_IP_Domain():
 
         except socket.timeout:
             if verbose: console.print(f"[{c6}][-] SSL: Timeout connecting to {ip}:443")
-            Variables.errors +=1
+            Variables.add_error()
         except ConnectionRefusedError:
             if verbose: console.print(f"[{c6}][-] SSL: Connection refused for {ip}:443")
-            Variables.errors +=1
+            Variables.add_error()
         except Exception as e:
             if verbose: console.print(f"[{c6}][-] SSL Exception Error:[{c2}] {e}")
-            Variables.errors +=1
+            Variables.add_error()
 
 
     @classmethod
@@ -216,13 +216,13 @@ class Reverse_IP_Domain():
 
         except dns.resolver.NXDOMAIN:
             if verbose: console.print(f"[{c6}][-] PTR: No PTR record for {ip}")
-            Variables.errors +=1
+            Variables.add_error()
         except dns.resolver.NoAnswer:
             if verbose: console.print(f"[{c6}][-] PTR: No answer for {ip}")
-            Variables.errors +=1
+            Variables.add_error()
         except Exception as e:
             if verbose: console.print(f"[{c6}][-] PTR Exception Error:[/{c6}] {e}")
-            Variables.errors +=1
+            Variables.add_error()
     
 
     @classmethod
@@ -257,7 +257,7 @@ class Reverse_IP_Domain():
 
 
                
-            except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}");  Variables.errors +=1
+            except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}");  Variables.add_error()
             
 
 
@@ -341,10 +341,10 @@ class Reverse_IP_Domain():
         Reverse_IP_Domain._threader(max_threads=max_threads, ips=ips)
 
  
-        File_Saver.push_scan_results(data=Variables.found_doms, reverse=True)
+        File_Saver.push_scan_results(data=Variables.found_doms, label="rdns_raw")
 
         cleaned_domains = Reverse_IP_Domain._clean_domains(Variables.found_doms)
-        File_Saver.push_scan_results(data=cleaned_domains, reverse=True)
+        File_Saver.push_scan_results(data=cleaned_domains, label="rdns_clean")
 
         
         from run import Run

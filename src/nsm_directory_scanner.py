@@ -7,15 +7,18 @@ from rich.panel import Panel
 
 
 # ETC IMPORTS
-import requests, sys, time
+import requests, sys, time, urllib3
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from collections import deque
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 
 # NSM IMPORTS
 from nsm_vars import Variables
+from nsm_database import File_Saver
 
 
 
@@ -35,6 +38,7 @@ class Directory_Scanner():
     scan = True
     current_dir = False
     creations = deque()
+    session = None
    
 
     @classmethod
@@ -61,39 +65,8 @@ class Directory_Scanner():
 
     @staticmethod
     def _domain_sanitzer(domains, CONSOLE=console, verbose=True) -> list:
-        """This will sanitize domain wordlist given by user --> coming from Vader --> Maul"""
-
-
-        c1 = "bold green"
-        c2 = "bold yellow"
-        c4 = "bold blue"
-        c5 = "yellow"
-        c6 = "bold red"
-
-
-        valid_domains = []
-
-
-        try:
-
-            path = Path() / str(domains)
-            if not path.exists(): CONSOLE.print(f"[{c6}][-] Invalid domain wordlist given, please check README.md for help!"); sys.exit()
-
-            with open(str(path), "r") as file:
-
-                for word in file:
-                    text = word.strip().split("\n"); text = '\n'.join(text)
-                    valid_domains.append(text)
-
-
-            if verbose: CONSOLE.print(f"[{c1}][+] Successfully validated domain wordlist: {path}")
-            return valid_domains
-            
-        
-
-        except FileNotFoundError as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
-
-        except Exception as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
+        """Now just delegates to the shared File_Saver.domain_sanitizer // logic lives in one place so its not copy-pasted across scanners"""
+        return File_Saver.domain_sanitizer(domains=domains, verbose=verbose)
     
 
     @staticmethod
@@ -138,9 +111,9 @@ class Directory_Scanner():
             return valid_wordlist
                 
 
-        except FileNotFoundError as e: CONSOLE.print(f"[{c6}][-] File Not Found Error:[{c2}] {e}"); Variables.errors += 1; return
+        except FileNotFoundError as e: CONSOLE.print(f"[{c6}][-] File Not Found Error:[{c2}] {e}"); Variables.add_error(); return
 
-        except Exception as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.errors += 1; sys.exit()
+        except Exception as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.add_error(); sys.exit()
     
 
     @classmethod
@@ -159,14 +132,18 @@ class Directory_Scanner():
         with Variables.LOCK: subdomain, dir = Directory_Scanner._iter_controller(); Variables.completed_dir += 1; cls.scanned += 1
 
 
-        try: 
-            
+        try:
+
             domain = f"{subdomain}/{dir}"
-            url = f"http://{domain}"
+            if subdomain.startswith("http://") or subdomain.startswith("https://"):
+                url = domain
+            else:
+                url = f"http://{domain}"
             Variables.panel_text = f"Target:[{c5}] {subdomain}/*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
 
-            response = requests.get(url=url, timeout=int(Variables.timeout), allow_redirects=False, verify=False)
+            if Variables.delay: time.sleep(float(Variables.delay))
+            response = cls.session.get(url=url, timeout=int(Variables.timeout), allow_redirects=False, verify=False)
             code     = response.status_code
             headers  = response.headers
            
@@ -186,16 +163,16 @@ class Directory_Scanner():
 
         except requests.exceptions.SSLError as e:
             if verbose: CONSOLE.print(f"[{c7}][-] SSL Error:[{c2}] {e}")
-            Variables.errors += 1
+            Variables.add_error()
         except (requests.exceptions.Timeout, requests.exceptions.ConnectTimeout) as e: 
             if verbose: CONSOLE.print(f"[{c7}][-] Timeout Error:[{c2}] {e}")
-            Variables.errors += 1
+            Variables.add_error()
         except requests.ConnectionError as e: 
             if verbose: CONSOLE.print(f"[{c7}][-] Connection Error:[{c2}] {e}")
-            Variables.errors += 1
+            Variables.add_error()
         except Exception as e: 
             if verbose: CONSOLE.print(f"[{c7}][-] Exception Error:[{c2}] {e}")
-            Variables.errors += 1
+            Variables.add_error()
     
 
 
@@ -232,6 +209,12 @@ class Directory_Scanner():
         except Exception: max_threads = 250
 
 
+        # ONE SHARED SESSION // POOL SIZED TO THREADS SO WE REUSE CONNECTIONS INSTEAD OF A NEW TCP/TLS HANDSHAKE PER REQUEST
+        adapter = requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads)
+        cls.session = requests.Session()
+        cls.session.mount("http://", adapter)
+        cls.session.mount("https://", adapter)
+
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
 
@@ -244,10 +227,10 @@ class Directory_Scanner():
 
             except KeyboardInterrupt as e:
                 CONSOLE.print(f"[[{c6}]][-] Exception Error:[{c5}] {e}")
-                Variables.errors += 1
+                Variables.add_error()
                 cls.scan = False
             except Exception as e:
-                Variables.errors += 1
+                Variables.add_error()
                 cls.scan = False
     
     
@@ -265,9 +248,11 @@ class Directory_Scanner():
 
         
 
-        if   Variables.domains:     subdomains = Directory_Scanner._domain_sanitzer(domains=subdomains)
+        # PREFER RESULTS FROM EARLIER PHASES SO --live/--subs CHAIN FORWARD // fall back to the -d file only if nothing ran before us
+        if   Variables.found_live:  subdomains = Variables.found_live
         elif Variables.found_subs:  subdomains = Variables.found_subs
         elif Variables.found_doms:  subdomains = Variables.found_doms
+        elif Variables.domains:     subdomains = Directory_Scanner._domain_sanitzer(domains=Variables.domains)
         else:                       subdomains = False
         if not subdomains and not url: console.print("\n[bold red][-] Input a valid domain goofy")
 

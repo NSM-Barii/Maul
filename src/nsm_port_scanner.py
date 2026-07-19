@@ -73,23 +73,24 @@ class Socket_Port_Scanner():
 
 
     @classmethod
-    def _threader_ports(cls, ip, timeout):
-        """This will spawn a raw thread for each port // concurrent futures is ass lol """
-
-        
-        with Variables.LOCK:
-            threads = []; cls.active += 1
-
-        for port in range(0,65356):
+    def _threader_ports(cls, ip, timeout, max_threads):
+        """This will scan all ports for one ip // bounded pool so we dont spawn 65k raw threads and nuke the OS"""
 
 
-            t = threading.Thread(target=cls._port_scanner, args=(ip, port, timeout), daemon=True)
-            threads.append(t)
-        
-        for t in threads: t.start()
+        with Variables.LOCK: cls.active += 1
 
-        for t in threads: t.join()
-        
+
+        try:              max_threads = int(max_threads)
+        except Exception: max_threads = 250
+
+
+        with ThreadPoolExecutor(max_workers=max_threads) as executor:
+
+            futures = [executor.submit(cls._port_scanner, ip, port, timeout) for port in range(1, 65536)]
+
+            for f in futures: f.result()
+
+
         console.print(f"[bold red][+] Nutted:[yellow] {ip}")
         with Variables.LOCK: cls.active -= 1
 
@@ -112,7 +113,7 @@ class Socket_Port_Scanner():
 
             console.print(f"\n[bold green][+] Scanning:[yellow] {ip}")
             cls.total_ips_scanned += 1
-            cls._threader_ports(ip=ip, timeout=timeout)
+            cls._threader_ports(ip=ip, timeout=timeout, max_threads=max_threads)
             #threading.Thread(target=cls._threader_ports, args=(ip, timeout), daemon=True).start()
 
 
@@ -129,13 +130,13 @@ class Socket_Port_Scanner():
 
         ips = File_Saver.ips_sanitizer(ips=ips, verbose=True)
         cls.total_ips_all = len(ips)
-        time_total = time.time()
+        cls.time_start = time.time()
 
 
         p = "=" * 10
         console.print(f"[bold red]\n{p}  Mass Port Scanning  {p}\n")
         cls._threader_ips(ips=ips, max_threads=max_threads, timeout=timeout)
-        File_Saver.push_scan_results(data=cls.ip_port_map, f_type="json")
+        File_Saver.push_scan_results(data=cls.ip_port_map, label="ports", f_type="json")
 
 
         console.print(cls.ip_port_map); time_total = time.time() - cls.time_start
@@ -144,7 +145,7 @@ class Socket_Port_Scanner():
 
         stats = (
             f"[{c3}] [+] Total IPs Scanned:[{c4}] {len(ips)}"
-            f"\n[{c3}] [+] Total Ports Found:[{c4}] {len(cls.total_ports)}"
+            f"\n[{c3}] [+] Total Ports Found:[{c4}] {cls.total_ports_open}"
             f"\n[{c3}] [+] Elapsed Time:[{c4}] {time_total}"
         )
 
