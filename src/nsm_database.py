@@ -196,7 +196,7 @@ class File_Saver():
 
 
             if Variables.save_name:   cls.base_name = f"{Variables.save_name}_{timestamp}"
-            elif Variables.url:       cls.base_name = f"{Variables.url.replace(".", "_")}_{timestamp}"
+            elif Variables.url:       cls.base_name = f"{Variables.url.replace('.', '_')}_{timestamp}"
             else:                     cls.base_name = timestamp
 
             console.print(f"[bold green][*] File Path successfully made:[/bold green] {cls.path_dir / cls.base_name}_*")
