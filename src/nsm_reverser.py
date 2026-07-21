@@ -124,7 +124,7 @@ class Reverse_IP_Domain():
         try:
 
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(5)
+            sock.settimeout(2)
             sock.connect((ip, 443))
 
             context = ssl.create_default_context()
@@ -238,25 +238,30 @@ class Reverse_IP_Domain():
 
 
         max_threads = int(max_threads)
-        futures = []
         cls.total = len(ips)
         cls.time_start = time.time()
+
+        ips   = list(ips)                 # set -> list so we can slice it into chunks
+        chunk = max_threads * 4           # only keep ~this many IPs in flight at once so 20k+ doesnt queue 60k futures upfront
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
 
             try:
 
-                for ip in ips:
+                for start in range(0, len(ips), chunk):
 
-                    futures.append(executor.submit(Reverse_IP_Domain._pull_domains_socket, ip))
-                    futures.append(executor.submit(Reverse_IP_Domain._pull_domains_ssl, ip))
-                    futures.append(executor.submit(Reverse_IP_Domain._pull_domains_ptr, ip))
+                    futures = []
+                    for ip in ips[start:start + chunk]:
 
-                    #Variables.panel_text = (f"Target:[{c5}] {ip}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
-                    Variables.panel_text = (f"IP:[{c5}] {cls.scan}/{cls.total}[/{c5}]  -  Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+                        futures.append(executor.submit(Reverse_IP_Domain._pull_domains_socket, ip))
+                        futures.append(executor.submit(Reverse_IP_Domain._pull_domains_ssl, ip))
+                        futures.append(executor.submit(Reverse_IP_Domain._pull_domains_ptr, ip))
+
+                        Variables.panel_text = (f"IP:[{c5}] {cls.scan}/{cls.total}[/{c5}]  -  Socket:[{c5}] {cls.scan_socket}[/{c5}]  -  SSL:[{c5}] {cls.scan_ssl}[/{c5}]  -  PTR:[{c5}] {cls.scan_ptr}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]")
+
+                    for f in futures: f.result()          # drain this chunk before queueing the next // keeps memory flat
 
 
-               
             except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}");  Variables.add_error()
             
 

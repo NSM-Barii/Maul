@@ -29,7 +29,7 @@ console = Variables.console
 
 
 class Directory_Scanner():
-    """subdomain scanner"""
+    """directory scanner"""
 
     
     done  = 0
@@ -37,7 +37,9 @@ class Directory_Scanner():
     scanned = 0
     scan = True
     current_dir = False
-    creations = deque()
+
+    creations = False
+
     session = None
    
 
@@ -48,24 +50,36 @@ class Directory_Scanner():
 
         if not cls.creations:
             if domains: targets = [domain for domain in domains] 
-            else:       targets = []; targets.append(url)
+            else:       targets = [url]
             cls.total = len(targets) * len(directores)
-            for dom in targets:
-                for sub in directores:
-                    #console.print(sub, dom)
-                    cls.creations.append((dom, sub))
+
+            cls.creations = ((dom, dir) for dom in targets for dir in directores)
             
-            CONSOLE.print(f"Iterations made: {len(cls.creations)}"); return False
+            
+            # DEAPPRECIATED // REFERENCE ONLY
+            #for dom in targets:
+            #    for sub in directores:
+            #        #console.print(sub, dom)
+            #        cls.creations.append((dom, sub))
+            
+            CONSOLE.print(f"Iterations made: {cls.total}"); return False
         
-        s, d = cls.creations.popleft()
+        
+        try: return next(cls.creations)
+        except StopIteration: return False
+
+        # REFERENCE
+        #s, d = cls.creations.popleft()
         #if cls.current_dir != s: cls.current_dir = s
         #console.print(s,d)
-        return s,d
+        #return s,d
     
 
     @staticmethod
     def _domain_sanitzer(domains, CONSOLE=console, verbose=True) -> list:
         """Now just delegates to the shared File_Saver.domain_sanitizer // logic lives in one place so its not copy-pasted across scanners"""
+       
+       
         return File_Saver.domain_sanitizer(domains=domains, verbose=verbose)
     
 
@@ -117,8 +131,8 @@ class Directory_Scanner():
     
 
     @classmethod
-    def _directory_scanner(cls, mutations=False, CONSOLE=console, verbose=False):
-        """Subdomain scan happens here"""
+    def _directory_scanner(cls, work, mutations=False, CONSOLE=console, verbose=False):
+        """Directory scan happens here // work = (dom, dir) already pulled by the worker"""
 
 
         c1 = "bold green"
@@ -128,18 +142,17 @@ class Directory_Scanner():
         c6 = "green"
         c7 = "bold red"
 
-        if not cls.scan: return Exception
-        with Variables.LOCK: subdomain, dir = Directory_Scanner._iter_controller(); Variables.completed_dir += 1; cls.scanned += 1
+        dom, dir = work
 
 
         try:
 
-            domain = f"{subdomain}/{dir}"
-            if subdomain.startswith("http://") or subdomain.startswith("https://"):
+            domain = f"{dom}/{dir}"
+            if dom.startswith("http://") or dom.startswith("https://"):
                 url = domain
             else:
                 url = f"http://{domain}"
-            Variables.panel_text = f"Target:[{c5}] {subdomain}/*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
+            Variables.panel_text = f"Target:[{c5}] {dom}/*[/{c5}]  -  Enumeration:[{c5}] {cls.scanned}/{cls.total}[/{c5}]  -  Max_Workers:[{c5}] {Variables.max_threads}[/{c5}]  -  Wordlist:[{c5}] {Variables.s_name}[/{c5}]  -  Errors:[{c5}] {Variables.errors}[/{c5}]"
 
 
             if Variables.delay: time.sleep(float(Variables.delay))
@@ -178,20 +191,21 @@ class Directory_Scanner():
 
     @classmethod
     def _worker(cls):
-        """Worker thread that repeatedly runs the scanner"""
+        """Worker pulls the next (dom, dir) under the lock // stops when the generator is drained"""
 
         while cls.scan:
 
             with Variables.LOCK:
-                if not cls.creations:
-                    return
+                work = cls._iter_controller()
+                if not work: return                              # generator drained -> this worker is done
+                Variables.completed_dir += 1; cls.scanned += 1
 
-            cls._directory_scanner()
+            cls._directory_scanner(work)
 
 
     @classmethod
     def _threader(cls, max_threads, CONSOLE=console, verbose=True):
-        """This will iter through and thread --> _subdomain_scanner"""
+        """This will iter through and thread --> _directory_scanner"""
 
 
         c1 = "bold green"
@@ -239,8 +253,8 @@ class Directory_Scanner():
     def main(cls):
         """This will run class wide logic"""
 
-        
-        subdomains  = Variables.domains 
+
+        subdomains  = Variables.domains
         max_threads = Variables.max_threads
         timeout     = Variables.timeout
         url         = Variables.url

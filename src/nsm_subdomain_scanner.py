@@ -46,7 +46,9 @@ class Subdomain_Scanner():
     
     done = 0
     scan = True
-    creations = deque()
+
+    creations = False
+
     total = 0
     current_sub = False
 
@@ -59,19 +61,33 @@ class Subdomain_Scanner():
 
         if not cls.creations:
             if domains: targets = [domain for domain in domains] 
-            else:       targets = []; targets.append(url)
+            else:       targets = [url]
             cls.total = len(targets) * len(subdomains)
-            for dom in targets:
-                for sub in subdomains:
-                    #console.print(sub, dom)
-                    cls.creations.append((sub, dom))
+
+            # GENERATOR (note the ROUND brackets) // lazy: builds NOTHING now, hands out one (sub,dom) at a time via next()
+            # a list [..] would build EVERY combo upfront (domains x wordlist = millions of tuples = OOM) // () keeps memory flat
+            # one-way + single-use: no len(), no indexing, dies when drained -> main() resets it to False to rebuild a fresh one
+            cls.creations = ((sub,dom) for dom in targets for sub in subdomains)
+           
             
-            CONSOLE.print(f"Iterations made: {len(cls.creations)}"); return False
+            # INEFFECIENT FOR MEMORY // KEEPING FOR REFERENCE
+            #for dom in targets:
+            #    for sub in subdomains:
+            #        #console.print(sub, dom)
+            #        cls.creations.append((sub, dom))
+            
+            CONSOLE.print(f"Iterations made: {cls.total}"); return False
         
-        s, d = cls.creations.popleft()
-        #if cls.current_sub != s: cls.current_sub = s
-        #console.print(s,d)
-        return s,d
+        
+        
+        try: return next(cls.creations)
+        except StopIteration: return False
+        
+        
+        # DEAPPRECIATED
+        #s, d = cls.creations.popleft()
+  
+        #return s,d
         
 
         
@@ -125,12 +141,14 @@ class Subdomain_Scanner():
     @staticmethod
     def _domain_sanitzer(domains, CONSOLE=console, verbose=True) -> list:
         """Now just delegates to the shared File_Saver.domain_sanitizer // logic lives in one place so its not copy-pasted across scanners"""
+
+
         return File_Saver.domain_sanitizer(domains=domains, verbose=verbose)
     
 
     @classmethod
-    def _subdomain_scanner(cls, mutations=False, CONSOLE=console, verbose=False):
-        """Subdomain scan happens here"""
+    def _subdomain_scanner(cls, work, mutations=False, CONSOLE=console, verbose=False):
+        """Subdomain scan happens here // work = (sub, domain) already pulled by the worker"""
 
 
         c1 = "bold green"
@@ -140,9 +158,7 @@ class Subdomain_Scanner():
         c6 = "green"
         c7 = "bold red"
 
-        if not cls.scan: return Exception
-        with Variables.LOCK: sub, domain = Subdomain_Scanner._iter_controller(); Variables.completed_sub += 1; cls.scanned += 1
-
+        sub, domain = work
 
 
         try:
@@ -169,15 +185,16 @@ class Subdomain_Scanner():
     
     @classmethod
     def _worker(cls):
-        """Worker thread that repeatedly runs the scanner"""
+        """Worker pulls the next (sub, domain) under the lock // stops when the generator is drained"""
 
         while cls.scan:
 
             with Variables.LOCK:
-                if not cls.creations:
-                    return
+                work = cls._iter_controller()
+                if not work: return                              # generator drained -> this worker is done
+                Variables.completed_sub += 1; cls.scanned += 1
 
-            cls._subdomain_scanner()
+            cls._subdomain_scanner(work)
 
 
     @classmethod
@@ -228,7 +245,7 @@ class Subdomain_Scanner():
     def main(cls):
         """This will run class wide logic"""
 
-        
+
         max_threads = Variables.max_threads
         timeout     = Variables.timeout
         url         = Variables.url
