@@ -103,10 +103,12 @@ class Reverse_IP_Domain():
                 cls.scan_socket += 1
 
 
-        except Exception as e: 
-            if verbose: console.print(f"[{c6}][-] Socket Exception Error:[{c2}] {e}")
+        except (socket.herror, socket.gaierror, socket.timeout):
             Variables.add_error()
-    
+        except Exception as e:
+            if verbose: console.print(f"[{c6}][-] Socket Exception Error:[{c2}] {e}")
+            Variables.add_error(); File_Saver.push_errors(e)
+
 
     @classmethod
     def _pull_domains_ssl(cls, ip, verbose=False):
@@ -177,7 +179,7 @@ class Reverse_IP_Domain():
             Variables.add_error()
         except Exception as e:
             if verbose: console.print(f"[{c6}][-] SSL Exception Error:[{c2}] {e}")
-            Variables.add_error()
+            Variables.add_error(); File_Saver.push_errors(e)
 
 
     @classmethod
@@ -220,9 +222,11 @@ class Reverse_IP_Domain():
         except dns.resolver.NoAnswer:
             if verbose: console.print(f"[{c6}][-] PTR: No answer for {ip}")
             Variables.add_error()
+        except (dns.resolver.LifetimeTimeout, dns.resolver.NoNameservers):
+            Variables.add_error()
         except Exception as e:
             if verbose: console.print(f"[{c6}][-] PTR Exception Error:[/{c6}] {e}")
-            Variables.add_error()
+            Variables.add_error(); File_Saver.push_errors(e)
     
 
     @classmethod

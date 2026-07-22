@@ -15,7 +15,7 @@ from nsm_vars import Variables
 # ETC IMPORTS
 from pathlib import Path
 from datetime import datetime
-import sys, json
+import sys, json, traceback, threading, time
 
 
 
@@ -78,6 +78,179 @@ class File_Saver():
 
     base_name    = False
     path_dir     = Path(__file__).parent.parent / "database" / "saved_scans"
+    log_path     = Path(__file__).parent.parent / "database" / "logs"
+    report_path  = Path(__file__).parent.parent / "database" / "reports"
+
+    autosave_cursor = {}
+    autosave_on     = False
+
+
+
+    @classmethod
+    def push_report(cls, durations, verbose=False):
+        """Write a per-run summary txt // one file per whole scan with counts + durations"""
+
+
+        def fmt(s):
+            s = int(s)
+            return f"{s // 3600:02d}:{(s % 3600) // 60:02d}:{s % 60:02d}"
+
+
+        ips_given = 0
+        if Variables.ips:
+            try:
+                with open(Variables.ips) as file: ips_given = len([l for l in file if l.strip()])
+            except Exception: ips_given = 0
+
+
+        doms_given = 0
+        if Variables.domains:
+            try:
+                with open(Variables.domains) as file: doms_given = len([l for l in file if l.strip()])
+            except Exception: doms_given = 0
+
+
+        name = cls.base_name or datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+
+
+        report = (
+            "========== MAUL SCAN REPORT ==========\n"
+            f"Name:            {name}\n"
+            f"Finished:        {datetime.now().strftime('%m/%d/%Y  -  %H:%M:%S')}\n"
+            "\n--- INPUT ---\n"
+            f"IPs given:       {ips_given}\n"
+            f"Domains given:   {doms_given}\n"
+            "\n--- RESULTS ---\n"
+            f"rDNS domains:    {len(Variables.found_doms)}\n"
+            f"Subdomains:      {len(Variables.found_subs)}\n"
+            f"Live hosts:      {len(Variables.found_live)}\n"
+            f"Directories:     {len(Variables.found_dirs)}\n"
+            f"Errors:          {Variables.errors}\n"
+            "\n--- DURATION ---\n"
+            f"rDNS:            {fmt(durations.get('rdns', 0))}\n"
+            f"Subdomains:      {fmt(durations.get('subs', 0))}\n"
+            f"Liveness:        {fmt(durations.get('live', 0))}\n"
+            f"Directories:     {fmt(durations.get('dirs', 0))}\n"
+            f"TOTAL:           {fmt(durations.get('total', 0))}\n"
+            "======================================\n"
+        )
+
+
+        try:
+
+            if not cls.report_path.exists(): cls.report_path.mkdir(exist_ok=True, parents=True)
+
+            path = cls.report_path / f"{name}_report.txt"
+            with open(str(path), "w") as file: file.write(report)
+
+            console.print(f"[bold green][+] Report saved -> {path}")
+
+
+        except Exception as e: console.print(f"[bold red][!] Report Error [bold yellow]: {e}"); cls.push_errors(e)
+
+
+
+    @classmethod
+    def _autosave(cls):
+        """Append only the NEW hits since the last flush to their .txt files // cheap: only writes the new slice, not the whole list"""
+
+
+        sources = {
+            "subs":     Variables.found_subs,
+            "live":     Variables.found_live,
+            "priority": Variables.found_priority,
+            "dirs":     Variables.found_dirs,
+        }
+
+
+        with Variables.LOCK:
+
+            for label, data in sources.items():
+
+                start = cls.autosave_cursor.get(label, 0)
+                new   = data[start:]
+                if not new: continue
+
+
+                try:
+
+                    if Variables.save_path:
+                        folder = cls.path_dir / Variables.save_path
+                        folder.mkdir(parents=True, exist_ok=True)
+                        pathway = folder / f"{cls.base_name}_{label}.txt"
+                    else:
+                        pathway = cls.path_dir / f"{cls.base_name}_{label}.txt"
+
+
+                    with open(str(pathway), "a") as file:
+                        for item in new: file.write(item + "\n")
+
+                    cls.autosave_cursor[label] = len(data)
+
+
+                except Exception as e: console.print(f"[bold red][!] Autosave Error [bold yellow]: {e}"); cls.push_errors(e)
+
+
+
+    @classmethod
+    def _autosave_loop(cls, interval):
+        """Background loop — flushes new hits to disk every <interval> seconds"""
+
+
+        while cls.autosave_on:
+
+            try:
+                cls._autosave()
+                time.sleep(interval)
+
+            except Exception as e:
+                console.print(f"[bold red][!] Autosave Loop Error [bold yellow]: {e}"); cls.push_errors(e); time.sleep(5)
+
+
+
+    @classmethod
+    def push(cls, data, path, verbose=False):
+        """This will be used to log all sub class methods in json // json-lines append"""
+
+
+        with Variables.LOCK:
+            try:
+
+                if not cls.log_path.exists(): cls.log_path.mkdir(exist_ok=True, parents=True)
+
+
+                path = cls.log_path / path
+
+                with open(str(path), "a") as file: file.write(json.dumps(data, default=str) + "\n")
+
+                if verbose: console.print(f"[bold green][+] Successfully logged -> {path}")
+
+
+            except Exception as e: console.print(f"[bold red][!] Exception Error [bold yellow]: {e}")
+
+
+
+    @classmethod
+    def push_errors(cls, e, verbose=False):
+        """This method will be used to log errors and where they happened at along with context about said errors"""
+
+
+        timestamp = datetime.now().strftime("%m/%d/%Y  -  %H:%M:%S")
+        tb    = traceback.extract_tb(e.__traceback__)
+        last  = tb[-1] if tb else False
+        where = f"{last.name}:{last.lineno}" if last else "unknown"
+
+
+        data = {
+            "timestamp": timestamp,
+            "where": where,
+            "type": type(e).__name__,
+            "message": str(e),
+            "traceback": traceback.format_exc()
+        }
+
+
+        cls.push(data=data, path="errors.json", verbose=verbose)
 
 
 
@@ -184,22 +357,52 @@ class File_Saver():
 
 
     @classmethod
-    def make_path(cls):
+    def init(cls, stop=False):
         """This will be called upon at the beginning fo the program to then make the path stamp"""
+
+
+        if stop:
+
+            cls.autosave_on = False
+            cls._autosave()
+            return False
 
         
         if not cls.base_name:
 
 
             timestamp = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+            
 
 
+            if Variables.save_name: 
+                save_name = Variables.save_name 
+                if save_name.endswith(".txt") or save_name.endswith(".json"): save_name = save_name.split('.')[0]
+            
+            if Variables.url:
+                save_url  = Variables.url.replace(".", "_") 
+                if save_url.endswith(".txt") or save_url.endswith(".json"): save_url = save_url.split('.')[0]
 
-            if Variables.save_name:   cls.base_name = f"{Variables.save_name}_{timestamp}"
-            elif Variables.url:       cls.base_name = f"{Variables.url.replace('.', '_')}_{timestamp}"
+
+            if Variables.save_name:   cls.base_name = f"{save_name}_{timestamp}"
+            elif Variables.url:       cls.base_name = f"{save_url}_{timestamp}"
             else:                     cls.base_name = timestamp
 
             console.print(f"[bold green][*] File Path successfully made:[/bold green] {cls.path_dir / cls.base_name}_*")
+    
+        
+        if Variables.autosave:
+
+            try:              interval = int(Variables.autosave)
+            except Exception: interval = 30
+
+            cls.autosave_on = True
+            threading.Thread(target=cls._autosave_loop, args=(interval,), daemon=True).start()
+            console.print(f"[bold green][INIT] Autosave started — flushing every {interval}s")
+        
+
+
+
 
 
 

@@ -34,9 +34,10 @@ class Variables():
 
     status_codes = False
 
-    max_threads = 250
+    max_threads = 1000
     timeout     = 1
     delay       = 0
+    autosave    = 0
     save        = False
     save_name   = False
     save_path   = False

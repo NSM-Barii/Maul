@@ -139,7 +139,7 @@ class Liveness_Scanner():
                 Variables.add_error()
             except Exception as e:
                 if verbose: CONSOLE.print(f"[{c7}][-] Exception Error:[{c2}] {e}")
-                Variables.add_error()
+                Variables.add_error(); File_Saver.push_errors(e)
 
         return False
 

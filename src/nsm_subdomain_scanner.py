@@ -177,9 +177,11 @@ class Subdomain_Scanner():
                 with Variables.LOCK: Variables.found_subs.append(subdomain); return True
 
 
-        except Exception as e: 
-            if verbose: CONSOLE.print(f"[{c7}][-] Exception Error:[{c2}] {e}")
+        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.LifetimeTimeout, dns.resolver.NoNameservers):
             Variables.add_error(); return False
+        except Exception as e:
+            if verbose: CONSOLE.print(f"[{c7}][-] Exception Error:[{c2}] {e}")
+            Variables.add_error(); File_Saver.push_errors(e); return False
         
     
     

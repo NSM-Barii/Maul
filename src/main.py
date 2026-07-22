@@ -83,6 +83,7 @@ class Main():
     parser.add_argument("--timeout", help="Request timeout in seconds (default: 5)")
     parser.add_argument("--delay",   help="Seconds to sleep between requests per thread // be a good neighbor / avoid hammering (default: 0)")
     parser.add_argument("--save",    action="store_true", help="Save scan results to file")
+    parser.add_argument("--autosave", help="Seconds between incremental autosaves of results to disk while scanning (0 = off)")
     parser.add_argument("--save-path", help="This will be used to save files in a custom path inside the database/saved_scans/{your_path}/{your_scan_results}")
     parser.add_argument("--x",       help="Custom output filename")
 
@@ -94,7 +95,7 @@ class Main():
     Variables.ips          = args.i            or False
     Variables.url          = args.u            or False
     Variables.domains      = args.d            or False
-    Variables.max_threads  = args.t            or 250
+    Variables.max_threads  = args.t            or 1000
 
     Variables.scan_rdns    = args.rdns         or False
     Variables.scan_ports   = args.ports        or False
@@ -111,6 +112,7 @@ class Main():
 
     Variables.timeout      = args.timeout      or 5
     Variables.delay        = args.delay        or 0
+    Variables.autosave     = args.autosave     or (30 if args.all else 0)
     Variables.save         = args.save         or False
     Variables.save_name    = args.x            or False
     Variables.save_path    = args.save_path    or False

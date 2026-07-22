@@ -16,6 +16,7 @@ from nsm_vars import Variables
 from nsm_reverser import Reverse_IP_Domain
 from nsm_port_scanner import Socket_Port_Scanner
 from nsm_subdomain_scanner import Subdomain_Scanner
+from nsm_subdomain_async import Subdomain_Scanner_Async
 from nsm_liveness_scanner import Liveness_Scanner
 from nsm_directory_scanner import Directory_Scanner
 from nsm_database import File_Saver
@@ -77,8 +78,36 @@ class Run():
 
     
 
-    @staticmethod
-    def runner():
+    @classmethod
+    def finish(cls):
+        """This will be used to call upon shit letting yk what was found as a result"""
+
+
+
+        c1 = "bold green"
+        c2 = "yellow"
+        line = " " * 20
+
+
+        ips  = Variables.ips
+        doms = Variables.found_doms
+        subs = Variables.found_subs
+        dirs = Variables.found_dirs
+
+
+        data = (
+            f"\n[{c1}]=========   Results   =========\n",
+            f"\n[{c1}][+] IPs Found:[{c2}] {ips}"
+            f"\n[{c1}][+] Domains Found:[{c2}] {doms}"
+            f"\n[{c1}][+] Subdomains Found:[{c2}] {subs}"
+            f"\n[{c1}][+] Directories Found:[{c2}] {dirs}"
+            f"\n[{c1}]=================================",
+
+        )
+
+
+    @classmethod
+    def runner(cls):
         """I need no comment // LOL"""
 
 
@@ -89,16 +118,34 @@ class Run():
             threading.Thread(target=Run._update, args=(), daemon=True).start()
 
 
-            if Variables.save: File_Saver.make_path()
+            # SAVE = only the non-autosave path writes per-module here // autosave handles it live and flushes at the end
+            save_now      = Variables.save and not Variables.autosave
+            durations     = {}
+            program_start = time.time()
 
-            if Variables.ips and Variables.scan_rdns: Reverse_IP_Domain.main()
+            if Variables.save: File_Saver.init()
+
+            if Variables.ips and Variables.scan_rdns:
+                t = time.time(); Reverse_IP_Domain.main(); durations["rdns"] = time.time() - t
             #if Variables.ips and Variables.scan_ports: Socket_Port_Scanner.main()
 
-            if Variables.scan_sub: Subdomain_Scanner.main()
-            if Variables.scan_live: Liveness_Scanner.main()
-            if Variables.scan_dir: Directory_Scanner.main()
+            if Variables.scan_sub:
+                t = time.time(); Subdomain_Scanner_Async.main(); durations["subs"] = time.time() - t
+                if save_now and Variables.found_subs: File_Saver.push_scan_results(data=Variables.found_subs, label="subs")
 
-            if Variables.save and Variables.found_subs: File_Saver.push_scan_results(data=Variables.found_subs, label="subs")
-            if Variables.save and Variables.found_live: File_Saver.push_scan_results(data=Variables.found_live, label="live")
-            if Variables.save and Variables.found_priority: File_Saver.push_scan_results(data=Variables.found_priority, label="priority")
-            if Variables.save and Variables.found_dirs: File_Saver.push_scan_results(data=Variables.found_dirs, label="dirs")
+            if Variables.scan_live:
+                t = time.time(); Liveness_Scanner.main(); durations["live"] = time.time() - t
+                if save_now and Variables.found_live: File_Saver.push_scan_results(data=Variables.found_live, label="live")
+                if save_now and Variables.found_priority: File_Saver.push_scan_results(data=Variables.found_priority, label="priority")
+
+            if Variables.scan_dir:
+                t = time.time(); Directory_Scanner.main(); durations["dirs"] = time.time() - t
+                if save_now and Variables.found_dirs: File_Saver.push_scan_results(data=Variables.found_dirs, label="dirs")
+
+            if Variables.save: File_Saver.init(stop=True)
+
+            durations["total"] = time.time() - program_start
+            File_Saver.push_report(durations)
+        
+
+        cls.finish()
