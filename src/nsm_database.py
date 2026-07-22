@@ -232,13 +232,20 @@ class File_Saver():
 
     @classmethod
     def push_errors(cls, e, verbose=False):
-        """This method will be used to log errors and where they happened at along with context about said errors"""
+        """This method will be used to log errors and where they happened at along with context // rate-limited so the same error doesnt flood the log"""
 
 
         timestamp = datetime.now().strftime("%m/%d/%Y  -  %H:%M:%S")
         tb    = traceback.extract_tb(e.__traceback__)
         last  = tb[-1] if tb else False
         where = f"{last.name}:{last.lineno}" if last else "unknown"
+
+
+        sig = f"{type(e).__name__}:{where}"
+
+        with Variables.LOCK:
+            if time.time() - Variables.error_seen.get(sig, 0) < Variables.error_cooldown: return
+            Variables.error_seen[sig] = time.time()
 
 
         data = {

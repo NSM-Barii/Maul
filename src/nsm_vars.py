@@ -63,6 +63,8 @@ class Variables():
     completed_dir = 0
     # COLLECT ALL ERRORS
     errors = 0
+    error_seen     = {}
+    error_cooldown = 5
 
 
 
