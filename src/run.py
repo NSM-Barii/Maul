@@ -74,7 +74,7 @@ class Run():
             text = Variables.panel_text
             Variables.panel.renderable = text
 
-            time.sleep(0.0005)
+            time.sleep(0.1)
 
     
 
@@ -105,6 +105,8 @@ class Run():
 
         )
 
+        console.print(data)
+
 
     @classmethod
     def runner(cls):
@@ -130,7 +132,7 @@ class Run():
             #if Variables.ips and Variables.scan_ports: Socket_Port_Scanner.main()
 
             if Variables.scan_sub:
-                t = time.time(); Subdomain_Scanner_Async.main(); durations["subs"] = time.time() - t
+                t = time.time(); Subdomain_Scanner.main(); durations["subs"] = time.time() - t
                 if save_now and Variables.found_subs: File_Saver.push_scan_results(data=Variables.found_subs, label="subs")
 
             if Variables.scan_live:

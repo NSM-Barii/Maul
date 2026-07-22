@@ -1,0 +1,7 @@
+database/saved_scans/
+database/reports/
+database/logs/
+src/venv/
+src/__pycache__/
+.vscode
+database/iran*/

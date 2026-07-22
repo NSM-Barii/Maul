@@ -17,6 +17,15 @@ from nsm_vars import Variables
 import argparse, time
 
 
+# RAISE OPEN-FILE LIMIT SO HIGH -t DOESNT HIT "too many open files"
+try:
+    import resource
+    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    resource.setrlimit(resource.RLIMIT_NOFILE, (hard, hard))
+except Exception:
+    pass
+
+
 # CONSTANTS
 console = Console()
 
