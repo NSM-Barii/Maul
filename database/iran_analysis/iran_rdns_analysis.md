@@ -1,5 +1,5 @@
 # Iran rDNS Data Analysis Report
-**File:** `/Users/jabarilucien/Documents/nsm_tools/maul/database/saved_scans/iran_rdns.txt`
+**File:** `Documents/nsm_tools/maul/database/saved_scans/iran_rdns.txt`
 **Total Lines:** 9,306
 **Unique .ir Domains:** 1,376
 **Total Unique Base Domains:** 4,325
