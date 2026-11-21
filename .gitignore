@@ -1,7 +1,9 @@
 database/saved_scans/
 database/reports/
 database/logs/
+database/.scope_filtered/
 src/venv/
 src/__pycache__/
 .vscode
 database/iran*/
+*.md
