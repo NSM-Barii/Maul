@@ -18,7 +18,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # NSM IMPORTS
 from nsm_vars import Variables
-from nsm_database import File_Saver
+from nsm_database import File_Saver, Sanitizier
 
 
 
@@ -59,11 +59,6 @@ class Liveness_Scanner():
 
         return cls.creations.popleft()
 
-
-    @staticmethod
-    def _domain_sanitzer(domains, CONSOLE=console, verbose=True) -> list:
-        """Now just delegates to the shared File_Saver.domain_sanitizer // logic lives in one place so its not copy-pasted across scanners"""
-        return File_Saver.domain_sanitizer(domains=domains, verbose=verbose)
 
 
     @classmethod
@@ -214,7 +209,7 @@ class Liveness_Scanner():
         # PREFER RESULTS FROM EARLIER PHASES SO --subs CHAINS FORWARD // fall back to the -d file / -u only if nothing ran before us
         if   Variables.found_subs:  targets = Variables.found_subs
         elif Variables.found_doms:  targets = Variables.found_doms
-        elif Variables.domains:     targets = Liveness_Scanner._domain_sanitzer(domains=Variables.domains)
+        elif Variables.domains:     targets = Sanitizier.domain_sanitizer(domains=Variables.domains)
         elif Variables.url:         targets = [Variables.url]
         else:                       targets = False
 

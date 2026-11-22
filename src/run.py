@@ -14,9 +14,7 @@ import time, threading, asyncio
 # NSM IMPORTS
 from nsm_vars import Variables
 from nsm_reverser import Reverse_IP_Domain
-from nsm_port_scanner import Socket_Port_Scanner
 from nsm_subdomain_scanner import Subdomain_Scanner
-from nsm_subdomain_async import Subdomain_Scanner_Async
 from nsm_liveness_scanner import Liveness_Scanner
 from nsm_directory_scanner import Directory_Scanner
 from nsm_database import File_Saver
@@ -133,16 +131,16 @@ class Run():
 
             if Variables.scan_sub:
                 t = time.time(); Subdomain_Scanner.main(); durations["subs"] = time.time() - t
-                if save_now and Variables.found_subs: File_Saver.push_scan_results(data=Variables.found_subs, label="subs")
+                if save_now and Variables.found_subs: File_Saver.push_subs(data=Variables.found_subs)
 
             if Variables.scan_live:
                 t = time.time(); Liveness_Scanner.main(); durations["live"] = time.time() - t
-                if save_now and Variables.found_live: File_Saver.push_scan_results(data=Variables.found_live, label="live")
-                if save_now and Variables.found_priority: File_Saver.push_scan_results(data=Variables.found_priority, label="priority")
+                if save_now and Variables.found_live: File_Saver.push_live(data=Variables.found_live)
+                if save_now and Variables.found_priority: File_Saver.push_priority(data=Variables.found_priority)
 
             if Variables.scan_dir:
                 t = time.time(); Directory_Scanner.main(); durations["dirs"] = time.time() - t
-                if save_now and Variables.found_dirs: File_Saver.push_scan_results(data=Variables.found_dirs, label="dirs")
+                if save_now and Variables.found_dirs: File_Saver.push_dirs(data=Variables.found_dirs)
 
             if Variables.save: File_Saver.init(stop=True)
 

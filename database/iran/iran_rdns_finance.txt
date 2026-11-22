@@ -1,6 +1,0 @@
-admin.ifatam.ir
-backend.ifatam.ir
-ifatam.ir
-ingress.local
-rihu.ac.ir
-srhls.aiengines.ir

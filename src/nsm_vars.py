@@ -49,6 +49,8 @@ class Variables():
     found_priority = []
     found_dirs     = []
 
+    found_data     = {}
+
     
     console = Console()
     panel_text = "False"

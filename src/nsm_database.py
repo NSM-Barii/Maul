@@ -76,6 +76,7 @@ class File_Saver():
     """This class will save files"""
 
 
+    file_path    = False
     base_name    = False
     path_dir     = Path(__file__).parent.parent / "database" / "saved_scans"
     log_path     = Path(__file__).parent.parent / "database" / "logs"
@@ -84,69 +85,6 @@ class File_Saver():
     autosave_cursor = {}
     autosave_on     = False
 
-
-
-    @classmethod
-    def push_report(cls, durations, verbose=False):
-        """Write a per-run summary txt // one file per whole scan with counts + durations"""
-
-
-        def fmt(s):
-            s = int(s)
-            return f"{s // 3600:02d}:{(s % 3600) // 60:02d}:{s % 60:02d}"
-
-
-        ips_given = 0
-        if Variables.ips:
-            try:
-                with open(Variables.ips) as file: ips_given = len([l for l in file if l.strip()])
-            except Exception: ips_given = 0
-
-
-        doms_given = 0
-        if Variables.domains:
-            try:
-                with open(Variables.domains) as file: doms_given = len([l for l in file if l.strip()])
-            except Exception: doms_given = 0
-
-
-        name = cls.base_name or datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-
-
-        report = (
-            "========== MAUL SCAN REPORT ==========\n"
-            f"Name:            {name}\n"
-            f"Finished:        {datetime.now().strftime('%m/%d/%Y  -  %H:%M:%S')}\n"
-            "\n--- INPUT ---\n"
-            f"IPs given:       {ips_given}\n"
-            f"Domains given:   {doms_given}\n"
-            "\n--- RESULTS ---\n"
-            f"rDNS domains:    {len(Variables.found_doms)}\n"
-            f"Subdomains:      {len(Variables.found_subs)}\n"
-            f"Live hosts:      {len(Variables.found_live)}\n"
-            f"Directories:     {len(Variables.found_dirs)}\n"
-            f"Errors:          {Variables.errors}\n"
-            "\n--- DURATION ---\n"
-            f"rDNS:            {fmt(durations.get('rdns', 0))}\n"
-            f"Subdomains:      {fmt(durations.get('subs', 0))}\n"
-            f"Liveness:        {fmt(durations.get('live', 0))}\n"
-            f"Directories:     {fmt(durations.get('dirs', 0))}\n"
-            f"TOTAL:           {fmt(durations.get('total', 0))}\n"
-            "======================================\n"
-        )
-
-
-        try:
-
-            if not cls.report_path.exists(): cls.report_path.mkdir(exist_ok=True, parents=True)
-
-            path = cls.report_path / f"{name}_report.txt"
-            with open(str(path), "w") as file: file.write(report)
-
-            console.print(f"[bold green][+] Report saved -> {path}")
-
-
-        except Exception as e: console.print(f"[bold red][!] Report Error [bold yellow]: {e}"); cls.push_errors(e)
 
 
 
@@ -207,29 +145,95 @@ class File_Saver():
                 console.print(f"[bold red][!] Autosave Loop Error [bold yellow]: {e}"); cls.push_errors(e); time.sleep(5)
 
 
-
+    # ALL FILE SAVING WILL BE CENTRALIZED THROUGH ME
     @classmethod
-    def push(cls, data, path, verbose=False):
-        """This will be used to log all sub class methods in json // json-lines append"""
+    def _push(cls, data, label, f_type="txt", verbose=True):
+        """This will be the core sub method that controls all data being saved"""
+
 
 
         with Variables.LOCK:
+
+
             try:
 
-                if not cls.log_path.exists(): cls.log_path.mkdir(exist_ok=True, parents=True)
+                folder = cls.path_dir / cls.base_name
+                folder.mkdir(parents=True, exist_ok=True)
+
+                path = folder / f"{label}.{f_type}"
 
 
-                path = cls.log_path / path
+                if f_type == "txt":
+                    with open(str(path), "w") as file:
+                        file.write('\n'.join(str(d) for d in data))
 
-                with open(str(path), "a") as file: file.write(json.dumps(data, default=str) + "\n")
+                elif f_type == "json":
+                    with open(str(path), "w") as file:
+                        json.dump(data, file, indent=4, default=str)
 
-                if verbose: console.print(f"[bold green][+] Successfully logged -> {path}")
+                elif f_type == "jsonl":
+                    with open(str(path), "a") as file:
+                        file.write(json.dumps(data, default=str) + "\n")
+
+                if verbose: console.print(f"[bold green][+] Successfully pushed:[/bold green] {label} <-> {path}")
 
 
-            except Exception as e: console.print(f"[bold red][!] Exception Error [bold yellow]: {e}")
+            except Exception as e:
+                console.print(f"[bold red][!] Push Error:[yellow] {e}")
+               # cls.push_errors()
 
 
 
+    @classmethod
+    def push_rdns(cls, data):
+        """This method will be responsible for Pushing Rdns data"""
+
+
+        cls._push(data=data, label="rdns", f_type="txt")
+
+
+    @classmethod
+    def push_rdns_clean(cls, data):
+        """Push cleaned rdns domains"""
+
+
+        cls._push(data=data, label="rdns_clean", f_type="txt")
+
+
+    @classmethod
+    def push_subs(cls, data):
+        """Push subdomain enumeration results"""
+
+
+        cls._push(data=data, label="subs", f_type="txt")
+
+
+    @classmethod
+    def push_live(cls, data):
+        """Push liveness check results"""
+
+
+        cls._push(data=data, label="live", f_type="txt")
+
+
+    @classmethod
+    def push_priority(cls, data):
+        """Push priority keyword hits"""
+
+
+        cls._push(data=data, label="priority", f_type="txt")
+
+
+    @classmethod
+    def push_dirs(cls, data):
+        """Push directory bruteforce results"""
+
+
+        cls._push(data=data, label="dirs", f_type="txt")
+
+
+
+    # PUSH <--
     @classmethod
     def push_errors(cls, e, verbose=False):
         """This method will be used to log errors and where they happened at along with context // rate-limited so the same error doesnt flood the log"""
@@ -257,47 +261,165 @@ class File_Saver():
         }
 
 
-        cls.push(data=data, path="errors.json", verbose=verbose)
+        cls._push(data=data, label="errors", f_type="jsonl", verbose=verbose)
 
 
 
     @classmethod
-    def push_scan_results(cls, data, label, f_type="txt", verbose=False):
-        """This will push current set of results to its own labeled file // one file per scan type"""
+    def push_report(cls, durations, verbose=False):
+        """Write a per-run summary txt // one file per whole scan with counts + durations"""
+
+
+        def fmt(s):
+            s = int(s)
+            return f"{s // 3600:02d}:{(s % 3600) // 60:02d}:{s % 60:02d}"
+
+
+        ips_given = 0
+        if Variables.ips:
+            try:
+                with open(Variables.ips) as file: ips_given = len([l for l in file if l.strip()])
+            except Exception: ips_given = 0
+
+
+        doms_given = 0
+        if Variables.domains:
+            try:
+                with open(Variables.domains) as file: doms_given = len([l for l in file if l.strip()])
+            except Exception: doms_given = 0
+
+
+        name = cls.base_name or datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+
+
+        report = {
+            "name":     name,
+            "finished": datetime.now().strftime("%m/%d/%Y  -  %H:%M:%S"),
+
+            "input": {
+                "ips_given":    ips_given,
+                "domains_given": doms_given
+            },
+
+            "results": {
+                "rdns_domains": len(Variables.found_doms),
+                "subdomains":   len(Variables.found_subs),
+                "live_hosts":   len(Variables.found_live),
+                "directories":  len(Variables.found_dirs),
+                "errors":       Variables.errors
+            },
+
+            "duration": {
+                "rdns":       fmt(durations.get("rdns", 0)),
+                "subdomains": fmt(durations.get("subs", 0)),
+                "liveness":   fmt(durations.get("live", 0)),
+                "directories":fmt(durations.get("dirs", 0)),
+                "total":      fmt(durations.get("total", 0))
+            }
+        }
+
+
+        cls._push(data=report, label="report", f_type="json")
+
+
+    
+
+
+
+
+    @classmethod
+    def init(cls, stop=False):
+        """This will be called upon at the beginning fo the program to then make the path stamp"""
+
+
+        if stop:
+
+            cls.autosave_on = False
+            cls._autosave()
+            console.print(f"\n[bold green][+] Final save pushed!")
+            return False
+
+        
+        if not cls.base_name:
+
+
+            timestamp = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+            
+
+
+            if Variables.save_name: 
+                save_name = Variables.save_name 
+                if save_name.endswith(".txt") or save_name.endswith(".json"): save_name = save_name.split('.')[0]
+            
+            if Variables.url:
+                save_url  = Variables.url.replace(".", "_") 
+                if save_url.endswith(".txt") or save_url.endswith(".json"): save_url = save_url.split('.')[0]
+
+
+            if Variables.save_name:   cls.base_name = f"{save_name}_{timestamp}"
+            elif Variables.url:       cls.base_name = f"{save_url}_{timestamp}"
+            else:                     cls.base_name = timestamp
+
+            cls.file_path = cls.path_dir / cls.base_name
+            cls.file_path.mkdir(exist_ok=True, parents=True)
+            
+            console.print(f"[bold green][*] File Path successfully made:[/bold green] {cls.path_dir / cls.base_name}_*")
+    
+        
+        if Variables.autosave:
+
+            try:              interval = int(Variables.autosave)
+            except Exception: interval = 30
+
+            cls.autosave_on = True
+            threading.Thread(target=cls._autosave_loop, args=(interval,), daemon=True).start()
+            console.print(f"[bold green][INIT] Autosave started — flushing every {interval}s")
+        
+
+
+
+
+
+
+class Sanitizier():  
+    """This class will be called upon to do any and all sanitizing"""
+
+
+
+    @classmethod
+    
+    def domain_sanitizer(cls, domains, verbose=True) -> list:
+        """This will sanitize a domain list file given by user --> coming from Vader --> Maul // shared by sub/live/dir scanners"""
+
+
+        c1 = "bold green"
+        c2 = "bold yellow"
+        c6 = "bold red"
+
+
+        valid_domains = []
 
 
         try:
 
-            if cls.path_dir.exists():
+            path = Path() / str(domains)
+            if not path.exists(): console.print(f"[{c6}][-] Invalid domain wordlist given, please check README.md for help!"); sys.exit()
 
-                if Variables.save_path: 
-                      p = cls.path_dir / Variables.save_path
-                      p.mkdir(parents=True, exist_ok=True)
+            with open(str(path), "r") as file:
 
-                      pathway = cls.path_dir / Variables.save_path /  f"{cls.base_name}_{label}.{f_type}"
-                else: 
-                    pathway = cls.path_dir / f"{cls.base_name}_{label}.{f_type}"
-
-                if f_type == "txt":
-                    with open(f"{pathway}", "w") as file:
-
-                        ahh = '\n'.join(d for d in data)
-                        file.write(ahh)
-
-                elif f_type == "json":
-                    with open(f"{pathway}", "w") as file:
-                        json.dump(data, file, indent=4)
-
-                console.print(f"[bold green][+] Data Successfully pushed:[/bold green] {pathway}")
+                for word in file:
+                    text = word.strip()
+                    if text: valid_domains.append(text)
 
 
-            else: console.print(f"\n[bold red][-] Your missing the database/saved_scans directory, please check README.md for info you skidd!!!"); sys.exit()
+            if verbose: console.print(f"[{c1}][+] Successfully validated domain wordlist: {path}")
+            return valid_domains
 
 
-        except Exception as e: console.print(f"[bold red][-] Exception Error:[bold yellow] {e}")
+        except Exception as e: console.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.add_error(); sys.exit()
+
+
         
-    
-    
     @classmethod
     def ips_sanitizer(cls, ips, verbose=True):
         """This will sanitize and validate ips list"""
@@ -331,94 +453,122 @@ class File_Saver():
         except Exception as e: console.print(f"[{c6}][-] Exception Error:[/{c6}] {e}"); sys.exit()
 
 
-    @classmethod
-    def domain_sanitizer(cls, domains, verbose=True) -> list:
-        """This will sanitize a domain list file given by user --> coming from Vader --> Maul // shared by sub/live/dir scanners"""
 
-
+    @staticmethod
+    def wordlist_sanitzer(wordlist, dir, CONSOLE=console, verbose=True) -> list:
+        """This method will be responsible for santizing the subdomain wordlist"""
+        
+        
         c1 = "bold green"
         c2 = "bold yellow"
+        c4 = "bold blue"
+        c5 = "yellow"
         c6 = "bold red"
 
 
-        valid_domains = []
+        valid_wordlist = set()
+
+        path_main = Path(__file__).parent.parent / "database" / "directories" 
+        path  = False
 
 
         try:
 
-            path = Path() / str(domains)
-            if not path.exists(): console.print(f"[{c6}][-] Invalid domain wordlist given, please check README.md for help!"); sys.exit()
+            if   wordlist=="1" or wordlist=="tiny.txt":     path = path_main / "tiny.txt"
+            elif wordlist=="2" or wordlist=="small.txt":    path = path_main / "small.txt"
+            elif wordlist=="3" or wordlist=="medium.txt":   path = path_main / "medium.txt"   
+            elif wordlist=="4" or wordlist=="large.txt":    path = path_main / "large.txt"
+
+
+            if not path:
+
+                path = Path(__file__).parent.parent / "database" / f"{dir}" / str(wordlist)
+                 
+            
+            if not path.exists(): CONSOLE.print(f"[{c6}][-] Invalid wordlist given, please check README.md for help!"); sys.exit()
+
 
             with open(str(path), "r") as file:
 
                 for word in file:
-                    text = word.strip()
-                    if text: valid_domains.append(text)
+                    text = word.strip().split("\t"); text = ''.join(text)
+                    valid_wordlist.add(text)
 
 
-            if verbose: console.print(f"[{c1}][+] Successfully validated domain wordlist: {path}")
-            return valid_domains
+                
+            if verbose: CONSOLE.print(f"[{c1}][+] Successfully validated dir wordlist: {path}")
+            return valid_wordlist
+                
 
+        except FileNotFoundError as e: CONSOLE.print(f"[{c6}][-] File Not Found Error:[{c2}] {e}"); Variables.add_error(); return
 
-        except Exception as e: console.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.add_error(); sys.exit()
+        except Exception as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.add_error(); sys.exit()
+    
 
 
     @classmethod
-    def init(cls, stop=False):
-        """This will be called upon at the beginning fo the program to then make the path stamp"""
+    def clean_domains(cls, domains):
+        """
+        Clean domain list for external tool usage
 
+        Filters out:
+        - Wildcard domains (but saves root domain: *.example.com → example.com)
+        - Certificate junk (CloudFlare Origin, WAF, Traefik default certs)
+        - PTR noise (ptr.network, centraldnserver.com)
+        - Hash domains (32+ char hex strings from default certificates)
+        - Invalid domains (no TLD, single words, malformed)
+        - IP addresses formatted as domains
+        - Empty lines
 
-        if stop:
+        Returns: Sorted list of clean, usable domains
+        """
 
-            cls.autosave_on = False
-            cls._autosave()
-            return False
+        c1 = "bold green"
+        c5 = "yellow"
 
+        cleaned = set()
+        Variables.panel_text = (f"[{c5}] Cleaning and Saving Results!")
+
+        for domain in domains:
+            domain = domain.strip()
+
+            if not domain:
+                continue
+
+            if domain.startswith('*'):
+                root = domain.replace('*.', '')
+                if root and '.' in root:
+                    cleaned.add(root.lower())
+                continue
+
+            if any(x in domain.lower() for x in ['certificate', 'waf', 'traefik.default', 'origin', 'reported', 'attack behavior']):
+                continue
+
+            if any(x in domain for x in ['ptr.network', 'centraldnserver.com', 'ip-ptr.tech', 'static.hostiran.name', 'localhost']):
+                continue
+
+            if len(domain.split('.')[0]) > 30 and domain.split('.')[0].replace('-', '').isalnum():
+                continue
+
+            if re.match(r'^[\d\-\.]+\.(static|ip-ptr|ptr)', domain):
+                continue
+
+            if '.' not in domain:
+                continue
+
+            tld = domain.split('.')[-1]
+            if not tld.isalpha() or len(tld) < 2 or len(tld) > 10:
+                continue
+
+            if domain.count('.') == 3 and all(part.isdigit() for part in domain.split('.')):
+                continue
+
+            cleaned.add(domain.lower()) 
         
-        if not cls.base_name:
 
 
-            timestamp = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-            
-
-
-            if Variables.save_name: 
-                save_name = Variables.save_name 
-                if save_name.endswith(".txt") or save_name.endswith(".json"): save_name = save_name.split('.')[0]
-            
-            if Variables.url:
-                save_url  = Variables.url.replace(".", "_") 
-                if save_url.endswith(".txt") or save_url.endswith(".json"): save_url = save_url.split('.')[0]
-
-
-            if Variables.save_name:   cls.base_name = f"{save_name}_{timestamp}"
-            elif Variables.url:       cls.base_name = f"{save_url}_{timestamp}"
-            else:                     cls.base_name = timestamp
-
-            console.print(f"[bold green][*] File Path successfully made:[/bold green] {cls.path_dir / cls.base_name}_*")
+        return sorted(cleaned)
     
-        
-        if Variables.autosave:
-
-            try:              interval = int(Variables.autosave)
-            except Exception: interval = 30
-
-            cls.autosave_on = True
-            threading.Thread(target=cls._autosave_loop, args=(interval,), daemon=True).start()
-            console.print(f"[bold green][INIT] Autosave started — flushing every {interval}s")
-        
-
-
-
-
-
-
-
-
-
-
-
-
 
 """
 Amount of code written per stream

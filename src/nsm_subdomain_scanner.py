@@ -19,7 +19,7 @@ from collections import deque
 
 # NSM IMPORTS
 from nsm_vars import Variables
-from nsm_database import File_Saver
+from nsm_database import File_Saver, Sanitizier
 
 
 
@@ -91,60 +91,8 @@ class Subdomain_Scanner():
         
 
         
-    @staticmethod
-    def _sub_sanitzer(wordlist, CONSOLE=console, verbose=True) -> list: 
-        """This method will be responsible for santizing the subdomain wordlist"""
-        
-        
-        c1 = "bold green"
-        c2 = "bold yellow"
-        c4 = "bold blue"
-        c5 = "yellow"
-        c6 = "bold red"
 
-
-        valid_wordlist = set()
-
-        path_main = Path(__file__).parent.parent / "database" / "subdomains" 
-        path  = False
-
-
-        try:
-
-            if   wordlist=="1" or wordlist=="tiny.txt":     path = path_main / "tiny.txt"
-            elif wordlist=="2" or wordlist=="small.txt":    path = path_main / "small.txt"
-            elif wordlist=="3" or wordlist=="medium.txt":   path = path_main / "medium.txt"   
-            elif wordlist=="4" or wordlist=="large.txt":    path = path_main / "large.txt"
-
-
-            if not path: path = Path(__file__).parent.parent / "database" / f"subdomains" / str(wordlist)
-            if not path.exists(): CONSOLE.print(f"[{c6}][-] Invalid wordlist given, please check README.md for help!"); sys.exit()
-
-
-            with open(str(path), "r") as file:
-
-                for word in file:
-                    text = word.strip().split("\t"); text = ''.join(text)
-                    valid_wordlist.add(text)
-                
-
-                
-            if verbose: CONSOLE.print(f"[{c1}][+] Successfully validated sub wordlist: {path}")
-            return valid_wordlist
-                
-
-        except FileNotFoundError as e: CONSOLE.print(f"[{c6}][-] File Not Found Error:[{c2}] {e}"); Variables.add_error(); return
-
-        except Exception as e: CONSOLE.print(f"[{c6}][-] Exception Error:[{c2}] {e}"); Variables.add_error(); sys.exit()
-    
-
-    @staticmethod
-    def _domain_sanitzer(domains, CONSOLE=console, verbose=True) -> list:
-        """Now just delegates to the shared File_Saver.domain_sanitizer // logic lives in one place so its not copy-pasted across scanners"""
-
-
-        return File_Saver.domain_sanitizer(domains=domains, verbose=verbose)
-    
+ 
 
     @classmethod
     def _subdomain_scanner(cls, work, mutations=False, CONSOLE=console, verbose=False):
@@ -256,12 +204,12 @@ class Subdomain_Scanner():
         mutations   = Variables.mutations
 
         
-        if Variables.domains:      domains = Subdomain_Scanner._domain_sanitzer(domains=domains)
+        if Variables.domains:      domains = Sanitizier.domain_sanitizer(domains=domains)
         elif Variables.found_doms: domains = Variables.found_doms
         else:                      domains = False
         if not domains and not url: console.print("\n[bold red][-] Input a valid domain goofy")
 
-        wordlist  = Subdomain_Scanner._sub_sanitzer(wordlist=wordlist)
+        wordlist  = Sanitizier.wordlist_sanitzer(wordlist=wordlist, dir="directories")
         
         p = "=" * 10
         console.print(f"[bold red]\n{p}  Subdomain Enumeration  {p}\n")
@@ -281,9 +229,9 @@ if __name__ == "__main__":
     t = 2
 
 
-    if t==1:Subdomain_Scanner._domain_sanitzer(domains=input("enter path: "))
+    if t==1:Sanitizier.domain_sanitizer(domains=input("enter path: "))
 
     elif t==2:
         for num in range(1,5): 
             print(num)
-            Subdomain_Scanner._sub_sanitzer(wordlist=num)
+            Sanitizier.wordlist_sanitzer(wordlist=num, dir="directories")
